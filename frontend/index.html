@@ -1,0 +1,1782 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Student Success Intelligence
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="/style.css"
+    >
+
+</head>
+
+
+<body>
+
+
+<!-- =========================================================
+     TOP NAVIGATION
+========================================================= -->
+
+<header class="topbar">
+
+    <div class="brand-area">
+
+        <div class="brand-icon">
+            ✦
+        </div>
+
+        <div>
+
+            <h1>
+                Student Success AI
+            </h1>
+
+            <p>
+                AI-Powered Student Analytics & Success Platform
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <nav class="main-nav">
+
+        <a
+            href="#dashboard"
+            class="nav-link active"
+        >
+            Dashboard
+        </a>
+
+        <a
+            href="#students"
+            class="nav-link"
+        >
+            Students
+        </a>
+
+        <a
+            href="#analytics"
+            class="nav-link"
+        >
+            Analytics
+        </a>
+
+        <a
+            href="#interventions"
+            class="nav-link"
+        >
+            Interventions
+        </a>
+
+    </nav>
+
+
+    <div class="top-actions">
+
+        <button
+            class="icon-button"
+            id="notificationButton"
+            title="Notifications"
+        >
+            🔔
+        </button>
+
+        <div class="faculty-profile">
+
+            <div class="faculty-avatar">
+                F
+            </div>
+
+            <div>
+
+                <strong>
+                    Faculty
+                </strong>
+
+                <span>
+                    Administrator
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</header>
+
+
+
+<!-- =========================================================
+     FACULTY PORTAL / ADDRESS BAR
+========================================================= -->
+
+<div class="portal-bar">
+
+    <div class="portal-window">
+
+        <span class="window-dot red"></span>
+        <span class="window-dot yellow"></span>
+        <span class="window-dot green"></span>
+
+        <div class="address-bar">
+
+            <span class="address-lock">
+                🔒
+            </span>
+
+            <span>
+                faculty.portal / student-success / dashboard
+            </span>
+
+        </div>
+
+        <span class="portal-status">
+            ● Live
+        </span>
+
+    </div>
+
+</div>
+
+
+
+<main id="dashboard">
+
+
+<!-- =========================================================
+     HERO
+========================================================= -->
+
+<section class="hero">
+
+    <div class="hero-content">
+
+        <div class="hero-text">
+
+            <div class="eyebrow">
+                ✦ AI STUDENT SUCCESS INTELLIGENCE
+            </div>
+
+            <h2>
+                Turn student data into
+                <span class="hero-highlight">
+                    better outcomes.
+                </span>
+            </h2>
+
+            <p>
+                Monitor student performance, identify risk early,
+                understand why students need support, and take
+                data-driven intervention decisions.
+            </p>
+
+
+            <div class="hero-actions">
+
+                <a
+                    href="#students"
+                    class="primary-button"
+                >
+                    View Students
+                </a>
+
+                <button
+                    class="secondary-button"
+                    onclick="openAIMentor()"
+                >
+                    ✦ Ask AI Mentor
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div class="hero-visual">
+
+            <div class="ai-orbit">
+
+                <div class="orbit-ring ring-one"></div>
+
+                <div class="orbit-ring ring-two"></div>
+
+                <div class="ai-core">
+
+                    <span>
+                        ✦
+                    </span>
+
+                    <small>
+                        AI
+                    </small>
+
+                </div>
+
+            </div>
+
+            <div class="floating-stat stat-one">
+
+                <span>
+                    Success Score
+                </span>
+
+                <strong>
+                    AI
+                </strong>
+
+            </div>
+
+            <div class="floating-stat stat-two">
+
+                <span>
+                    Risk Detection
+                </span>
+
+                <strong>
+                    ✓
+                </strong>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+<!-- =========================================================
+     SUMMARY CARDS
+========================================================= -->
+
+<section class="cards-section">
+
+    <div class="section-mini-heading">
+
+        <div>
+
+            <span class="section-label">
+                INSTITUTION SNAPSHOT
+            </span>
+
+            <h2>
+                Student Success Overview
+            </h2>
+
+        </div>
+
+        <span class="live-indicator">
+            <span></span>
+            Live Data
+        </span>
+
+    </div>
+
+
+    <section class="cards">
+
+
+        <div
+            class="card interactive-card"
+            onclick="document.getElementById('students').scrollIntoView({behavior:'smooth'})"
+        >
+
+            <div class="card-icon blue-icon">
+                👥
+            </div>
+
+            <span>
+                Total Students
+            </span>
+
+            <strong id="totalStudents">
+                -
+            </strong>
+
+            <small>
+                Students monitored
+            </small>
+
+        </div>
+
+
+
+        <div class="card interactive-card">
+
+            <div class="card-icon purple-icon">
+                ✦
+            </div>
+
+            <span>
+                Average Success Score
+            </span>
+
+            <strong id="averageScore">
+                -
+            </strong>
+
+            <small>
+                Overall student health
+            </small>
+
+        </div>
+
+
+
+        <div
+            class="card success interactive-card"
+            onclick="filterStudentsByRisk('On Track')"
+        >
+
+            <div class="card-icon green-icon">
+                ✓
+            </div>
+
+            <span>
+                On Track
+            </span>
+
+            <strong id="onTrack">
+                -
+            </strong>
+
+            <small>
+                Performing well
+            </small>
+
+        </div>
+
+
+
+        <div
+            class="card warning interactive-card"
+            onclick="filterStudentsByRisk('Needs Attention')"
+        >
+
+            <div class="card-icon orange-icon">
+                !
+            </div>
+
+            <span>
+                Needs Attention
+            </span>
+
+            <strong id="needsAttention">
+                -
+            </strong>
+
+            <small>
+                Early intervention
+            </small>
+
+        </div>
+
+
+
+        <div
+            class="card danger interactive-card"
+            onclick="filterStudentsByRisk('Immediate Support')"
+        >
+
+            <div class="card-icon red-icon">
+                !
+            </div>
+
+            <span>
+                Immediate Support
+            </span>
+
+            <strong id="immediateSupport">
+                -
+            </strong>
+
+            <small>
+                Priority intervention
+            </small>
+
+        </div>
+
+
+    </section>
+
+</section>
+
+
+
+<!-- =========================================================
+     AI INSIGHT STRIP
+========================================================= -->
+
+<section class="ai-insight-strip">
+
+    <div class="ai-insight-icon">
+        ✦
+    </div>
+
+    <div class="ai-insight-content">
+
+        <span>
+            AI INSIGHT
+        </span>
+
+        <strong>
+            Student Success Intelligence is continuously analysing
+            academic, attendance, engagement and placement indicators.
+        </strong>
+
+        <p>
+            Use the AI Mentor to ask questions about students,
+            risks, departments and interventions.
+        </p>
+
+    </div>
+
+    <button
+        class="insight-button"
+        onclick="openAIMentor()"
+    >
+        Ask AI
+        <span>
+            →
+        </span>
+    </button>
+
+</section>
+
+
+
+<!-- =========================================================
+     FACULTY NOTES
+========================================================= -->
+
+<section
+    class="faculty-notes-dashboard-section"
+    id="facultyNotesDashboard"
+>
+
+    <div class="section-heading">
+
+        <div>
+
+            <span class="section-label">
+                FACULTY WORKSPACE
+            </span>
+
+            <h2>
+                Faculty Notes & Documents
+            </h2>
+
+            <p>
+                Add general observations, academic notes,
+                intervention resources and supporting documents.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="faculty-notes-dashboard-card">
+
+
+        <!-- =================================================
+             ADD FACULTY NOTE
+        ================================================== -->
+
+        <div class="faculty-note-create">
+
+            <div class="card-heading">
+
+                <span class="mini-icon purple-bg">
+                    📝
+                </span>
+
+                <div>
+
+                    <h3>
+                        Add Faculty Note
+                    </h3>
+
+                    <small>
+                        These notes are general faculty notes and are
+                        not linked to any particular student.
+                    </small>
+
+                </div>
+
+            </div>
+
+
+            <div
+                class="faculty-note-form"
+                id="facultyNoteForm"
+            >
+
+
+                <!-- FACULTY NAME -->
+
+                <div class="faculty-form-field">
+
+                    <label
+                        for="facultyName"
+                    >
+                        Faculty Name
+                    </label>
+
+                    <input
+                        id="facultyName"
+                        type="text"
+                        placeholder="Enter faculty name"
+                    >
+
+                </div>
+
+
+                <!-- NOTE -->
+
+                <div class="faculty-form-field">
+
+                    <label
+                        for="facultyNote"
+                    >
+                        Faculty Note
+                    </label>
+
+                    <textarea
+                        id="facultyNote"
+                        rows="5"
+                        maxlength="1000"
+                        placeholder="Write your observation, academic note, intervention plan or important faculty information..."
+                    ></textarea>
+
+                    <small>
+                        Maximum 1000 characters.
+                    </small>
+
+                </div>
+
+
+                <!-- FILE -->
+
+                <div class="faculty-form-field">
+
+                    <label
+                        for="facultyAttachmentInput"
+                    >
+                        Attach Faculty Document
+                    </label>
+
+                    <input
+                        id="facultyAttachmentInput"
+                        type="file"
+                        accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    >
+
+                    <small>
+                        Supported formats: PDF and DOCX.
+                        Maximum file size: 10 MB.
+                    </small>
+
+                </div>
+
+
+                <!-- BUTTON -->
+
+                <div class="faculty-note-form-actions">
+
+                    <button
+                        type="button"
+                        class="primary-button"
+                        onclick="addFacultyNote()"
+                    >
+                        📝 Add Note & Attachment
+                    </button>
+
+                    <button
+                        type="button"
+                        class="secondary-button"
+                        onclick="clearFacultyNoteForm()"
+                    >
+                        Clear
+                    </button>
+
+                </div>
+
+
+                <!-- STATUS -->
+
+                <div
+                    id="facultyNotesStatus"
+                    class="faculty-notes-status"
+                ></div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =================================================
+             PREVIOUS NOTES
+        ================================================== -->
+
+        <div class="faculty-notes-history">
+
+            <div class="faculty-notes-history-header">
+
+                <div>
+
+                    <span class="panel-label">
+                        SAVED NOTES
+                    </span>
+
+                    <h3>
+                        Previous Faculty Notes
+                    </h3>
+
+                </div>
+
+                <button
+                    type="button"
+                    class="outline-button"
+                    onclick="loadFacultyNotes()"
+                >
+                    ↻ Refresh
+                </button>
+
+            </div>
+
+
+            <div
+                id="facultyNotes"
+                class="faculty-notes-list"
+            >
+
+                <div class="faculty-notes-empty">
+
+                    <div class="faculty-notes-empty-icon">
+                        📝
+                    </div>
+
+                    <strong>
+                        No faculty notes yet
+                    </strong>
+
+                    <p>
+                        Add your first faculty observation or
+                        supporting document above.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+</section>
+
+
+
+<!-- =========================================================
+     ANALYTICS
+========================================================= -->
+
+<section
+    class="analytics-section"
+    id="analytics"
+>
+
+    <div class="section-heading">
+
+        <div>
+
+            <span class="section-label">
+                ANALYTICS
+            </span>
+
+            <h2>
+                Institution Intelligence
+            </h2>
+
+            <p>
+                Understand the overall health of your student population.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <section class="analytics">
+
+
+        <!-- INSTITUTION OVERVIEW -->
+
+        <div class="panel analytics-panel">
+
+            <div class="panel-heading">
+
+                <div>
+
+                    <span class="panel-label">
+                        PERFORMANCE
+                    </span>
+
+                    <h3>
+                        Institution Overview
+                    </h3>
+
+                </div>
+
+                <div class="panel-symbol">
+                    ◈
+                </div>
+
+            </div>
+
+
+            <div class="metric-row">
+
+                <div>
+
+                    <span>
+                        Average CGPA
+                    </span>
+
+                    <small>
+                        Academic performance
+                    </small>
+
+                </div>
+
+                <strong id="averageCgpa">
+                    -
+                </strong>
+
+            </div>
+
+
+            <div class="metric-row">
+
+                <div>
+
+                    <span>
+                        Average Attendance
+                    </span>
+
+                    <small>
+                        Student participation
+                    </small>
+
+                </div>
+
+                <strong id="averageAttendance">
+                    -
+                </strong>
+
+            </div>
+
+
+            <div class="metric-row">
+
+                <div>
+
+                    <span>
+                        Placement Ready
+                    </span>
+
+                    <small>
+                        Career readiness
+                    </small>
+
+                </div>
+
+                <strong id="placementReady">
+                    -
+                </strong>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- RISK DISTRIBUTION -->
+
+        <div class="panel analytics-panel">
+
+            <div class="panel-heading">
+
+                <div>
+
+                    <span class="panel-label">
+                        RISK
+                    </span>
+
+                    <h3>
+                        Risk Distribution
+                    </h3>
+
+                </div>
+
+                <div class="panel-symbol danger-symbol">
+                    !
+                </div>
+
+            </div>
+
+
+            <div class="risk-bar-item">
+
+                <div class="risk-bar-label">
+
+                    <span>
+                        <i class="dot green-dot"></i>
+                        On Track
+                    </span>
+
+                    <strong id="onTrackPercent">
+                        -
+                    </strong>
+
+                </div>
+
+                <div class="bar">
+
+                    <div id="onTrackBar"></div>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="risk-bar-item">
+
+                <div class="risk-bar-label">
+
+                    <span>
+                        <i class="dot orange-dot"></i>
+                        Needs Attention
+                    </span>
+
+                    <strong id="attentionPercent">
+                        -
+                    </strong>
+
+                </div>
+
+                <div class="bar">
+
+                    <div id="attentionBar"></div>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="risk-bar-item">
+
+                <div class="risk-bar-label">
+
+                    <span>
+                        <i class="dot red-dot"></i>
+                        Immediate Support
+                    </span>
+
+                    <strong id="supportPercent">
+                        -
+                    </strong>
+
+                </div>
+
+                <div class="bar">
+
+                    <div id="supportBar"></div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- STUDENT SEGMENTATION -->
+
+        <div class="panel analytics-panel">
+
+            <div class="panel-heading">
+
+                <div>
+
+                    <span class="panel-label">
+                        AI SEGMENTATION
+                    </span>
+
+                    <h3>
+                        Student Segments
+                    </h3>
+
+                </div>
+
+                <div class="panel-symbol purple-symbol">
+                    ✦
+                </div>
+
+            </div>
+
+
+            <div
+                id="segments"
+                class="segment-list"
+            ></div>
+
+        </div>
+
+
+    </section>
+
+</section>
+
+
+
+<!-- =========================================================
+     STUDENT INSIGHTS
+========================================================= -->
+
+<section
+    class="students-section"
+    id="students"
+>
+
+    <div class="section-header">
+
+        <div>
+
+            <span class="section-label">
+                STUDENT INTELLIGENCE
+            </span>
+
+            <h2>
+                Student Insights
+            </h2>
+
+            <p>
+                Explore individual student performance,
+                risk indicators and AI-powered interventions.
+            </p>
+
+        </div>
+
+
+        <div class="student-actions">
+
+            <button
+                class="outline-button"
+                onclick="openAIMentor()"
+            >
+                ✦ AI Mentor
+            </button>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- FILTER BAR -->
+
+    <div class="filter-toolbar">
+
+        <div class="search-wrapper">
+
+            <span>
+                🔎
+            </span>
+
+            <input
+                id="search"
+                type="text"
+                placeholder="Search student name or ID..."
+                oninput="loadStudents()"
+            >
+
+        </div>
+
+
+        <select
+            id="riskFilter"
+            onchange="loadStudents()"
+        >
+
+            <option>
+                All
+            </option>
+
+            <option>
+                On Track
+            </option>
+
+            <option>
+                Needs Attention
+            </option>
+
+            <option>
+                Immediate Support
+            </option>
+
+        </select>
+
+
+        <select
+            id="departmentFilter"
+            onchange="loadStudents()"
+        >
+
+            <option>
+                All
+            </option>
+
+        </select>
+
+
+        <button
+            class="clear-filter-button"
+            onclick="clearStudentFilters()"
+        >
+            Reset
+        </button>
+
+    </div>
+
+
+
+    <!-- TABLE -->
+
+    <div class="table-container">
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        Student
+                    </th>
+
+                    <th>
+                        Department
+                    </th>
+
+                    <th>
+                        CGPA
+                    </th>
+
+                    <th>
+                        Attendance
+                    </th>
+
+                    <th>
+                        Success Score
+                    </th>
+
+                    <th>
+                        Risk
+                    </th>
+
+                    <th>
+                        Segment
+                    </th>
+
+                    <th>
+                        Action
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody id="studentTable">
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</section>
+
+
+
+<!-- =========================================================
+     STUDENT PROFILE MODAL
+========================================================= -->
+
+<div
+    id="profileOverlay"
+    class="modal-overlay hidden"
+>
+
+    <section
+        id="profile"
+        class="profile modal-profile"
+    >
+
+
+        <!-- PROFILE HEADER -->
+
+        <div class="profile-header">
+
+            <div class="profile-heading-area">
+
+                <div class="profile-avatar">
+                    👤
+                </div>
+
+                <div>
+
+                    <span class="section-label">
+                        STUDENT SUCCESS PROFILE
+                    </span>
+
+                    <h2 id="profileName">
+                    </h2>
+
+                    <p id="profileId">
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="profile-header-actions">
+
+                <div
+                    id="profileRisk"
+                    class="risk-badge"
+                ></div>
+
+
+                <button
+                    class="modal-close"
+                    onclick="closeStudentProfile()"
+                    title="Close"
+                >
+                    ×
+                </button>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- PROFILE SUMMARY -->
+
+        <div class="profile-grid">
+
+
+            <div class="profile-card score-card">
+
+                <span>
+                    Success Score
+                </span>
+
+                <strong id="profileScore">
+                </strong>
+
+                <small>
+                    Overall student health
+                </small>
+
+            </div>
+
+
+            <div class="profile-card">
+
+                <span>
+                    Segment
+                </span>
+
+                <strong id="profileSegment">
+                </strong>
+
+                <small>
+                    AI classification
+                </small>
+
+            </div>
+
+
+            <div class="profile-card">
+
+                <span>
+                    Placement
+                </span>
+
+                <strong id="profilePlacement">
+                </strong>
+
+                <small>
+                    Career readiness
+                </small>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- PROFILE QUICK ACTIONS -->
+
+        <div class="profile-actions">
+
+            <button
+                class="primary-button"
+                onclick="openAIMentor()"
+            >
+                ✦ Ask AI About Student
+            </button>
+
+            <button
+                class="secondary-button"
+                onclick="alert('Mentor assignment feature will be connected next.')"
+            >
+                Assign Mentor
+            </button>
+
+            <button
+                class="secondary-button"
+                onclick="alert('Intervention tracking will be connected next.')"
+            >
+                Mark Reviewed
+            </button>
+
+        </div>
+
+
+
+        <!-- =================================================
+             AI RECOMMENDATION
+        ================================================== -->
+
+        <div
+            class="ai-recommendation"
+            id="aiRecommendation"
+        >
+
+            <div class="ai-recommendation-header">
+
+                <div>
+
+                    <span class="ai-label">
+                        ✦ AI-POWERED INTERVENTION
+                    </span>
+
+                    <h3>
+                        Recommended Action
+                    </h3>
+
+                </div>
+
+
+                <div
+                    id="recommendationPriority"
+                    class="priority-badge"
+                ></div>
+
+            </div>
+
+
+            <p
+                id="overallRecommendation"
+                class="overall-recommendation"
+            ></p>
+
+
+            <!-- STUDENT STRENGTHS -->
+
+            <div class="student-strengths-section">
+
+                <div class="card-heading">
+
+                    <span class="mini-icon green-bg">
+                        ✓
+                    </span>
+
+                    <h4>
+                        Student Strengths
+                    </h4>
+
+                </div>
+
+                <ul
+                    id="studentStrengths"
+                    class="recommendation-list"
+                ></ul>
+
+            </div>
+
+
+            <div>
+
+                <h4>
+                    Recommended Interventions
+                </h4>
+
+                <ul
+                    id="recommendedActions"
+                    class="recommendation-list"
+                ></ul>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =================================================
+             RISK FACTORS + SCORE EXPLANATION
+        ================================================== -->
+
+        <div class="profile-columns">
+
+
+            <div class="profile-info-card">
+
+                <div class="card-heading">
+
+                    <span class="mini-icon danger-bg">
+                        !
+                    </span>
+
+                    <h3>
+                        Risk Factors
+                    </h3>
+
+                </div>
+
+                <ul id="riskReasons"></ul>
+
+            </div>
+
+
+            <div class="profile-info-card">
+
+                <div class="card-heading">
+
+                    <span class="mini-icon ai-bg">
+                        ✦
+                    </span>
+
+                    <h3>
+                        Score Explanation
+                    </h3>
+
+                </div>
+
+                <div id="scoreExplanation"></div>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =================================================
+             ACADEMIC / PLACEMENT / ENGAGEMENT
+        ================================================== -->
+
+        <div class="profile-columns">
+
+
+            <div class="profile-info-card">
+
+                <div class="card-heading">
+
+                    <span class="mini-icon blue-bg">
+                        🎓
+                    </span>
+
+                    <h3>
+                        Academic
+                    </h3>
+
+                </div>
+
+                <p id="academic"></p>
+
+            </div>
+
+
+            <div class="profile-info-card">
+
+                <div class="card-heading">
+
+                    <span class="mini-icon purple-bg">
+                        🎯
+                    </span>
+
+                    <h3>
+                        Placement Readiness
+                    </h3>
+
+                </div>
+
+                <p id="placement"></p>
+
+            </div>
+
+
+            <div class="profile-info-card">
+
+                <div class="card-heading">
+
+                    <span class="mini-icon green-bg">
+                        ⚡
+                    </span>
+
+                    <h3>
+                        Engagement
+                    </h3>
+
+                </div>
+
+                <p id="engagement"></p>
+
+            </div>
+
+
+        </div>
+
+
+    </section>
+
+</div>
+
+
+
+<!-- =========================================================
+     AI MENTOR CHATBOT
+========================================================= -->
+
+<div
+    id="aiMentor"
+    class="ai-mentor"
+>
+
+
+    <!-- CHAT HEADER -->
+
+    <div class="ai-mentor-header">
+
+        <div class="ai-mentor-title">
+
+            <div class="ai-mentor-avatar">
+                ✦
+            </div>
+
+            <div>
+
+                <strong>
+                    AI Mentor
+                </strong>
+
+                <span>
+                    Student Success Assistant
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <button
+            class="chat-close"
+            onclick="closeAIMentor()"
+        >
+            ×
+        </button>
+
+    </div>
+
+
+
+    <!-- CHAT MESSAGES -->
+
+    <div
+        id="aiChatMessages"
+        class="ai-chat-messages"
+    >
+
+        <div class="ai-message">
+
+            <div class="message-avatar">
+                ✦
+            </div>
+
+            <div class="message-content">
+
+                <strong>
+                    AI Mentor
+                </strong>
+
+                <p>
+                    Hello Faculty 👋
+                </p>
+
+                <p>
+                    I can help you understand student performance,
+                    identify risks and recommend interventions.
+                </p>
+
+                <p>
+                    What would you like to know?
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- QUICK QUESTIONS -->
+
+        <div class="chat-suggestions">
+
+            <button
+                onclick="askAIMentor('Which students need immediate support?')"
+            >
+                🔴 Students needing support
+            </button>
+
+            <button
+                onclick="askAIMentor('Which department has the highest risk?')"
+            >
+                📊 Department risk
+            </button>
+
+            <button
+                onclick="askAIMentor('Show me placement risk students')"
+            >
+                🎯 Placement risk
+            </button>
+
+            <button
+                onclick="askAIMentor('How should I intervene with at-risk students?')"
+            >
+                💡 Intervention advice
+            </button>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- CHAT INPUT -->
+
+    <div class="ai-chat-input">
+
+        <input
+            id="aiMentorInput"
+            type="text"
+            placeholder="Ask about students..."
+            onkeydown="handleMentorKey(event)"
+        >
+
+        <button
+            onclick="sendAIMentorMessage()"
+            title="Send"
+        >
+            ➤
+        </button>
+
+    </div>
+
+
+</div>
+
+
+
+<!-- =========================================================
+     AI MENTOR FLOATING BUTTON
+========================================================= -->
+
+<button
+    id="aiMentorButton"
+    class="ai-mentor-button"
+    onclick="openAIMentor()"
+    title="Open AI Mentor"
+>
+
+    <span class="ai-button-icon">
+        ✦
+    </span>
+
+    <span class="ai-button-text">
+        AI Mentor
+    </span>
+
+</button>
+
+
+
+<!-- =========================================================
+     NOTIFICATION PANEL
+========================================================= -->
+
+<div
+    id="notificationPanel"
+    class="notification-panel hidden"
+>
+
+    <div class="notification-header">
+
+        <div>
+
+            <span class="section-label">
+                ALERT CENTER
+            </span>
+
+            <h3>
+                Student Alerts
+            </h3>
+
+        </div>
+
+        <button
+            onclick="closeNotifications()"
+            class="modal-close"
+        >
+            ×
+        </button>
+
+    </div>
+
+
+    <div class="notification-item critical">
+
+        <div class="notification-icon">
+            !
+        </div>
+
+        <div>
+
+            <strong>
+                Immediate Support
+            </strong>
+
+            <p>
+                Students require priority intervention.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="notification-item warning">
+
+        <div class="notification-icon">
+            !
+        </div>
+
+        <div>
+
+            <strong>
+                Needs Attention
+            </strong>
+
+            <p>
+                Students have indicators requiring monitoring.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="notification-item success">
+
+        <div class="notification-icon">
+            ✓
+        </div>
+
+        <div>
+
+            <strong>
+                Students On Track
+            </strong>
+
+            <p>
+                Continue monitoring and growth opportunities.
+            </p>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- =========================================================
+     FOOTER
+========================================================= -->
+
+<footer>
+
+    <div class="footer-brand">
+
+        <span>
+            ✦
+        </span>
+
+        <strong>
+            Student Success AI
+        </strong>
+
+    </div>
+
+    <p>
+        AI-Powered Student Analytics and Success Platform
+    </p>
+
+    <span class="footer-status">
+        ● System Online
+    </span>
+
+</footer>
+
+
+
+<script src="/app.js"></script>
+
+
+</body>
+
+</html>
