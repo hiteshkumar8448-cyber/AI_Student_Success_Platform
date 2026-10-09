@@ -26,6 +26,186 @@ departments = [
 
 
 # ============================================================
+# REALISTIC FICTIONAL STUDENT NAMES
+# ============================================================
+
+first_names = [
+    "Aarav",
+    "Aditi",
+    "Aditya",
+    "Akash",
+    "Akshara",
+    "Aman",
+    "Amisha",
+    "Ananya",
+    "Aniket",
+    "Anjali",
+    "Ansh",
+    "Arjun",
+    "Aryan",
+    "Avni",
+    "Ayush",
+    "Bhavya",
+    "Chaitanya",
+    "Charu",
+    "Chetan",
+    "Deepak",
+    "Diya",
+    "Divya",
+    "Esha",
+    "Gaurav",
+    "Harsh",
+    "Ishaan",
+    "Isha",
+    "Jatin",
+    "Karan",
+    "Kavya",
+    "Khushi",
+    "Krishna",
+    "Kritika",
+    "Lakshya",
+    "Madhav",
+    "Manish",
+    "Meera",
+    "Mohit",
+    "Muskan",
+    "Naman",
+    "Nandini",
+    "Navya",
+    "Neeraj",
+    "Neha",
+    "Nikhil",
+    "Nisha",
+    "Pallavi",
+    "Pankaj",
+    "Parth",
+    "Pooja",
+    "Pranav",
+    "Prateek",
+    "Priya",
+    "Rahul",
+    "Riya",
+    "Rohan",
+    "Rohit",
+    "Sakshi",
+    "Sameer",
+    "Sana",
+    "Sanjay",
+    "Sanya",
+    "Shivam",
+    "Shreya",
+    "Simran",
+    "Sneha",
+    "Sonali",
+    "Sourabh",
+    "Tanisha",
+    "Tanya",
+    "Tarun",
+    "Tushar",
+    "Vaibhav",
+    "Varun",
+    "Vansh",
+    "Vanshika",
+    "Vikas",
+    "Vikram",
+    "Yash",
+    "Yashi",
+    "Zoya",
+    "Abhishek",
+    "Akanksha",
+    "Alok",
+    "Arnav",
+    "Ayesha",
+    "Dev",
+    "Devansh",
+    "Diwakar",
+    "Ishita",
+    "Kabir",
+    "Komal",
+    "Kunal",
+    "Mansi",
+    "Mayank",
+    "Nakul",
+    "Palak",
+    "Rajat",
+    "Rashmi"
+]
+
+
+last_names = [
+    "Sharma",
+    "Verma",
+    "Gupta",
+    "Singh",
+    "Kumar",
+    "Yadav",
+    "Mehta",
+    "Agarwal",
+    "Bansal",
+    "Chauhan",
+    "Mishra",
+    "Joshi",
+    "Malhotra",
+    "Kapoor",
+    "Saini",
+    "Shukla",
+    "Tiwari",
+    "Pandey",
+    "Srivastava",
+    "Jain",
+    "Choudhary",
+    "Rana",
+    "Arora",
+    "Saxena",
+    "Mathur",
+    "Goyal",
+    "Mittal",
+    "Khanna",
+    "Bhatia",
+    "Sethi",
+    "Nair",
+    "Iyer",
+    "Reddy",
+    "Rao",
+    "Patel",
+    "Desai",
+    "Shah",
+    "Patil",
+    "Kulkarni",
+    "Naik",
+    "Das",
+    "Dutta",
+    "Roy",
+    "Sen",
+    "Bose",
+    "Banerjee",
+    "Ghosh",
+    "Mukherjee",
+    "Chatterjee",
+    "Sarkar"
+]
+
+
+# ============================================================
+# GENERATE STUDENT NAMES
+# ============================================================
+
+student_names = []
+
+for i in range(N):
+
+    first_name = first_names[i % len(first_names)]
+
+    last_name = last_names[
+        (i * 7 + i // len(first_names)) % len(last_names)
+    ]
+
+    student_names.append(
+        f"{first_name} {last_name}"
+    )
+
+
+# ============================================================
 # CREATE BASE STUDENT DATA
 # ============================================================
 
@@ -34,9 +214,9 @@ students = pd.DataFrame({
         f"STU{1001 + i}" for i in range(N)
     ],
 
-    "name": [
-        f"Student {i + 1}" for i in range(N)
-    ],
+    # Realistic fictional names instead of
+    # Student 1, Student 2, etc.
+    "name": student_names,
 
     "department": np.random.choice(
         departments,
@@ -187,13 +367,6 @@ students = pd.DataFrame({
 # ============================================================
 # GUARANTEE DEPARTMENT DISTRIBUTION
 # ============================================================
-#
-# Make sure every department definitely has students.
-# We give each department 100 students.
-#
-# This also makes department filtering predictable for
-# the hackathon demo.
-# ============================================================
 
 for i, department in enumerate(departments):
 
@@ -208,20 +381,6 @@ for i, department in enumerate(departments):
 
 # ============================================================
 # GUARANTEE RISK GROUPS
-# ============================================================
-#
-# Students 0-39:
-#     Immediate Support
-#
-# Students 40-199:
-#     Needs Attention
-#
-# Students 200-499:
-#     Mostly On Track / Developing
-#
-# The actual risk level is still calculated by analytics.py.
-# We are creating realistic underlying indicators rather
-# than inserting a fake risk label.
 # ============================================================
 
 
@@ -314,7 +473,6 @@ for i in range(0, 40):
 
 for i in range(40, 200):
 
-    # Moderate academic performance
     students.loc[i, "cgpa"] = np.round(
         np.random.uniform(5.8, 7.2),
         2
@@ -384,25 +542,11 @@ for i in range(40, 200):
 # ============================================================
 # GUARANTEE STUDENT SEGMENTS
 # ============================================================
-#
-# The segment rules in analytics.py are:
-#
-# High Performer
-# Academic Strong / Placement Risk
-# Academic Risk
-# Highly Engaged
-# Developing
-#
-# We deliberately create examples for each category.
-# ============================================================
 
 
 # ------------------------------------------------------------
 # HIGH PERFORMERS
 # ------------------------------------------------------------
-#
-# Students 200-219
-#
 
 for i in range(200, 220):
 
@@ -492,9 +636,6 @@ for i in range(200, 220):
 # ------------------------------------------------------------
 # ACADEMIC STRONG / PLACEMENT RISK
 # ------------------------------------------------------------
-#
-# Students 220-239
-#
 
 for i in range(220, 240):
 
@@ -547,9 +688,6 @@ for i in range(220, 240):
 # ------------------------------------------------------------
 # ACADEMIC RISK
 # ------------------------------------------------------------
-#
-# Students 240-259
-#
 
 for i in range(240, 260):
 
@@ -587,9 +725,6 @@ for i in range(240, 260):
 # ------------------------------------------------------------
 # HIGHLY ENGAGED
 # ------------------------------------------------------------
-#
-# Students 260-279
-#
 
 for i in range(260, 280):
 
@@ -661,10 +796,6 @@ students["placement_outcome"] = np.where(
 # ============================================================
 # INTERVENTION LABEL
 # ============================================================
-#
-# This is useful for the ML model.
-# It represents students who show several warning signals.
-# ============================================================
 
 risk_signal = (
     (students["cgpa"] < 6.0).astype(int) * 2
@@ -719,6 +850,12 @@ print()
 print("Department distribution:")
 print(
     students["department"].value_counts()
+)
+
+print()
+print("Sample student names:")
+print(
+    students[["student_id", "name"]].head(10).to_string(index=False)
 )
 
 print()

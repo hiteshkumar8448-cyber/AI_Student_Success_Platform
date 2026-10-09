@@ -1,0 +1,826 @@
+/* ============================================================
+   AI STUDENT SUCCESS PLATFORM
+   Login Page
+============================================================ */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+    min-height: 100vh;
+
+    background: #f6f8fc;
+
+    color: #172033;
+}
+
+button,
+input {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+.hidden {
+    display: none !important;
+}
+
+
+/* ============================================================
+   MAIN
+============================================================ */
+
+.login-app {
+    min-height: 100vh;
+
+    display: grid;
+
+    grid-template-columns: 1.08fr 0.92fr;
+
+    background:
+        radial-gradient(
+            circle at 10% 10%,
+            rgba(99, 91, 255, 0.10),
+            transparent 30%
+        ),
+        #f6f8fc;
+}
+
+
+/* ============================================================
+   BRAND PANEL
+============================================================ */
+
+.login-brand-panel {
+    position: relative;
+
+    min-height: 100vh;
+
+    padding: 55px 60px;
+
+    overflow: hidden;
+
+    color: white;
+
+    background:
+        linear-gradient(
+            145deg,
+            #171d3b 0%,
+            #262f61 55%,
+            #4b42a7 100%
+        );
+}
+
+.login-brand-panel::before {
+    content: "";
+
+    position: absolute;
+
+    width: 430px;
+    height: 430px;
+
+    right: -180px;
+    top: -150px;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.10);
+
+    border-radius: 50%;
+}
+
+.login-brand-panel::after {
+    content: "";
+
+    position: absolute;
+
+    width: 320px;
+    height: 320px;
+
+    left: -150px;
+    bottom: -150px;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.08);
+
+    border-radius: 50%;
+}
+
+
+/* ============================================================
+   BRAND HEADER
+============================================================ */
+
+.brand-header {
+    position: relative;
+
+    z-index: 2;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 13px;
+}
+
+.brand-logo {
+    width: 46px;
+    height: 46px;
+
+    display: grid;
+
+    place-items: center;
+
+    border-radius: 14px;
+
+    background:
+        rgba(255, 255, 255, 0.12);
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.14);
+
+    font-size: 23px;
+}
+
+.brand-header h1 {
+    font-size: 18px;
+
+    line-height: 1.2;
+
+    font-weight: 800;
+}
+
+.brand-header p {
+    margin-top: 4px;
+
+    font-size: 12px;
+
+    color:
+        rgba(255, 255, 255, 0.66);
+}
+
+
+/* ============================================================
+   BRAND CONTENT
+============================================================ */
+
+.brand-content {
+    position: relative;
+
+    z-index: 2;
+
+    max-width: 560px;
+
+    margin-top: 105px;
+}
+
+.brand-eyebrow {
+    display: inline-block;
+
+    margin-bottom: 16px;
+
+    color: #bbb7ff;
+
+    font-size: 11px;
+
+    font-weight: 800;
+
+    letter-spacing: 1.8px;
+}
+
+.brand-content h2 {
+    max-width: 560px;
+
+    font-size: clamp(38px, 4.5vw, 60px);
+
+    line-height: 1.02;
+
+    letter-spacing: -2.5px;
+
+    margin-bottom: 23px;
+}
+
+.brand-content h2 span {
+    color: #bdb8ff;
+}
+
+.brand-content > p {
+    max-width: 510px;
+
+    color:
+        rgba(255, 255, 255, 0.74);
+
+    font-size: 15px;
+
+    line-height: 1.75;
+}
+
+
+/* ============================================================
+   FEATURES
+============================================================ */
+
+.brand-features {
+    display: grid;
+
+    gap: 18px;
+
+    margin-top: 40px;
+}
+
+.brand-feature {
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: 13px;
+}
+
+.feature-icon {
+    width: 39px;
+    height: 39px;
+
+    flex: 0 0 39px;
+
+    display: grid;
+
+    place-items: center;
+
+    border-radius: 11px;
+
+    background:
+        rgba(255, 255, 255, 0.11);
+
+    font-size: 16px;
+}
+
+.brand-feature strong {
+    display: block;
+
+    margin-bottom: 4px;
+
+    font-size: 14px;
+}
+
+.brand-feature span {
+    display: block;
+
+    max-width: 420px;
+
+    color:
+        rgba(255, 255, 255, 0.62);
+
+    font-size: 12px;
+
+    line-height: 1.55;
+}
+
+
+/* ============================================================
+   BRAND FOOTER
+============================================================ */
+
+.brand-footer {
+    position: absolute;
+
+    z-index: 2;
+
+    left: 60px;
+    bottom: 32px;
+
+    color:
+        rgba(255, 255, 255, 0.52);
+
+    font-size: 11px;
+}
+
+
+/* ============================================================
+   FORM PANEL
+============================================================ */
+
+.login-form-panel {
+    min-height: 100vh;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 45px;
+}
+
+.login-card {
+    width: min(430px, 100%);
+}
+
+
+/* ============================================================
+   LOGIN CARD HEADER
+============================================================ */
+
+.login-card-icon {
+    width: 58px;
+    height: 58px;
+
+    display: grid;
+
+    place-items: center;
+
+    margin-bottom: 20px;
+
+    border-radius: 17px;
+
+    background: #efefff;
+
+    font-size: 24px;
+}
+
+.login-card h2 {
+    font-size: 32px;
+
+    letter-spacing: -0.9px;
+
+    margin-bottom: 8px;
+}
+
+.login-description {
+    color: #727b8f;
+
+    font-size: 14px;
+
+    line-height: 1.65;
+
+    margin-bottom: 27px;
+}
+
+
+/* ============================================================
+   ROLE SELECTOR
+============================================================ */
+
+.role-selector {
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 8px;
+
+    padding: 5px;
+
+    margin-bottom: 23px;
+
+    border:
+        1px solid #e4e7ee;
+
+    border-radius: 14px;
+
+    background: #f7f8fb;
+}
+
+.role-button {
+    height: 46px;
+
+    border: none;
+
+    border-radius: 10px;
+
+    background: transparent;
+
+    color: #7b8495;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+    transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.role-button:hover {
+    color: #3f4759;
+}
+
+.role-button.active {
+    background: white;
+
+    color: #635bff;
+
+    box-shadow:
+        0 4px 12px
+        rgba(25, 35, 56, 0.08);
+}
+
+.role-icon {
+    font-size: 15px;
+}
+
+
+/* ============================================================
+   FORM
+============================================================ */
+
+.login-form {
+    width: 100%;
+}
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;
+
+    margin-bottom: 8px;
+
+    color: #293247;
+
+    font-size: 13px;
+
+    font-weight: 700;
+}
+
+.label-row {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 10px;
+
+    margin-bottom: 8px;
+}
+
+.label-row label {
+    margin-bottom: 0;
+}
+
+.password-hint {
+    color: #9aa2b1;
+
+    font-size: 10px;
+
+    font-weight: 600;
+}
+
+.form-input {
+    width: 100%;
+
+    height: 52px;
+
+    padding: 0 15px;
+
+    border:
+        1px solid #dbe0ea;
+
+    border-radius: 13px;
+
+    outline: none;
+
+    background: #fbfcfe;
+
+    color: #172033;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background 0.2s ease;
+}
+
+.form-input::placeholder {
+    color: #a0a8b8;
+}
+
+.form-input:focus {
+    border-color: #7168ff;
+
+    background: white;
+
+    box-shadow:
+        0 0 0 4px
+        rgba(113, 104, 255, 0.10);
+}
+
+.password-wrapper {
+    position: relative;
+}
+
+.password-wrapper .form-input {
+    padding-right: 48px;
+}
+
+.password-toggle {
+    position: absolute;
+
+    top: 50%;
+    right: 10px;
+
+    transform: translateY(-50%);
+
+    width: 34px;
+    height: 34px;
+
+    display: grid;
+
+    place-items: center;
+
+    border: none;
+
+    border-radius: 8px;
+
+    background: transparent;
+
+    color: #7e8798;
+
+    font-size: 15px;
+}
+
+.password-toggle:hover {
+    background: #f1f3f7;
+
+    color: #4d5669;
+}
+
+
+/* ============================================================
+   LOGIN BUTTON
+============================================================ */
+
+.login-button {
+    width: 100%;
+
+    height: 52px;
+
+    margin-top: 7px;
+
+    padding: 0 18px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    border: none;
+
+    border-radius: 13px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #635bff,
+            #7c57d6
+        );
+
+    color: white;
+
+    font-size: 13px;
+
+    font-weight: 750;
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        opacity 0.2s ease;
+}
+
+.login-button:hover {
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 10px 24px
+        rgba(99, 91, 255, 0.23);
+}
+
+.login-button:disabled {
+    opacity: 0.65;
+
+    cursor: wait;
+
+    transform: none;
+
+    box-shadow: none;
+}
+
+#loginButtonArrow {
+    font-size: 20px;
+}
+
+
+/* ============================================================
+   MESSAGE
+============================================================ */
+
+.login-message {
+    padding: 12px 14px;
+
+    margin: 8px 0;
+
+    border-radius: 11px;
+
+    font-size: 12px;
+
+    line-height: 1.5;
+}
+
+.login-message.error {
+    background: #fff1f2;
+
+    color: #be123c;
+
+    border:
+        1px solid #fecdd3;
+}
+
+.login-message.success {
+    background: #ecfdf5;
+
+    color: #047857;
+
+    border:
+        1px solid #a7f3d0;
+}
+
+
+/* ============================================================
+   DEMO BOX
+============================================================ */
+
+.demo-box {
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: 11px;
+
+    margin-top: 20px;
+
+    padding: 14px;
+
+    border:
+        1px solid #e8ebf1;
+
+    border-radius: 13px;
+
+    background: #f8f9fc;
+}
+
+.demo-icon {
+    width: 32px;
+    height: 32px;
+
+    flex: 0 0 32px;
+
+    display: grid;
+
+    place-items: center;
+
+    border-radius: 9px;
+
+    background: white;
+
+    font-size: 14px;
+}
+
+.demo-box strong {
+    display: block;
+
+    margin-bottom: 4px;
+
+    font-size: 12px;
+}
+
+.demo-box p {
+    color: #737d91;
+
+    font-size: 11px;
+
+    line-height: 1.55;
+}
+
+.demo-box b {
+    color: #3f485a;
+}
+
+
+/* ============================================================
+   SECURITY
+============================================================ */
+
+.security-note {
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    margin-top: 18px;
+
+    color: #929aaa;
+
+    font-size: 10px;
+
+    line-height: 1.45;
+}
+
+.security-note span {
+    font-size: 13px;
+}
+
+.security-note p {
+    margin: 0;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 980px) {
+
+    .login-app {
+        grid-template-columns: 1fr;
+    }
+
+    .login-brand-panel {
+        min-height: auto;
+
+        padding: 42px 42px 48px;
+    }
+
+    .brand-content {
+        margin-top: 60px;
+    }
+
+    .brand-footer {
+        position: static;
+
+        margin-top: 40px;
+    }
+
+    .login-form-panel {
+        min-height: auto;
+
+        padding: 50px 35px;
+    }
+}
+
+
+@media (max-width: 620px) {
+
+    .login-brand-panel {
+        padding: 32px 25px 40px;
+    }
+
+    .brand-content {
+        margin-top: 48px;
+    }
+
+    .brand-content h2 {
+        font-size: 37px;
+
+        letter-spacing: -1.3px;
+    }
+
+    .login-form-panel {
+        padding: 34px 22px 45px;
+    }
+
+    .login-card h2 {
+        font-size: 28px;
+    }
+
+    .role-button {
+        height: 44px;
+    }
+}

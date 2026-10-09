@@ -1,28 +1,35 @@
-// ============================================================
-// AI STUDENT SUCCESS PLATFORM
-// Faculty Dashboard JavaScript
-// Enhanced Functionality Version
-// UI / Design is intentionally preserved
-// ============================================================
+/* =========================================================
+   STUDENT SUCCESS AI - FACULTY APP
+   ========================================================= */
 
+"use strict";
 
-// ============================================================
-// GLOBAL STATE
-// ============================================================
+/* =========================================================
+   GLOBAL STATE
+========================================================= */
 
 let currentStudents = [];
 let activeStudent = null;
 let activeStudentForNotes = null;
-let typingMessageCounter = 0;
+
 let studentLoadRequest = 0;
+let typingMessageCounter = 0;
+
+let facultyInterventions = [];
+let facultyReports = [];
+let globalFacultyNotes = [];
 
 
-// ============================================================
-// SECURITY HELPER
-// ============================================================
+/* =========================================================
+   BASIC HELPERS
+========================================================= */
+
+function getElement(id) {
+    return document.getElementById(id);
+}
+
 
 function escapeHtml(value) {
-
     if (value === null || value === undefined) {
         return "";
     }
@@ -36,588 +43,530 @@ function escapeHtml(value) {
 }
 
 
-// ============================================================
-// GENERIC HELPERS
-// ============================================================
-
-function getElement(id) {
-
-    return document.getElementById(id);
-
-}
-
-
-function showElement(id) {
-
-    const element = getElement(id);
-
-    if (element) {
-        element.classList.remove("hidden");
-    }
-
-}
-
-
-function hideElement(id) {
-
-    const element = getElement(id);
-
-    if (element) {
-        element.classList.add("hidden");
-    }
-
-}
-
-
 function safeNumber(value, fallback = 0) {
-
     const number = Number(value);
 
     return Number.isFinite(number)
         ? number
         : fallback;
-
 }
 
 
-// ============================================================
-// FORMAT STUDENT STRENGTH
-// FIXES [object Object]
-// ============================================================
-
-function formatStudentStrength(strength) {
-
-    if (
-        strength === null ||
-        strength === undefined
-    ) {
-        return "";
+function formatDate(dateValue) {
+    if (!dateValue) {
+        return "-";
     }
 
+    const date = new Date(dateValue);
 
-    // --------------------------------------------------------
-    // STRING OR NUMBER
-    // --------------------------------------------------------
-
-    if (
-        typeof strength === "string" ||
-        typeof strength === "number"
-    ) {
-
-        return String(strength);
-
+    if (Number.isNaN(date.getTime())) {
+        return dateValue;
     }
 
+    return date.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+    });
+}
 
-    // --------------------------------------------------------
-    // OBJECT
-    // --------------------------------------------------------
 
-    if (
-        typeof strength === "object"
-    ) {
+function formatDateTime(dateValue) {
+    if (!dateValue) {
+        return "-";
+    }
+
+    const date = new Date(dateValue);
+
+    if (Number.isNaN(date.getTime())) {
+        return dateValue;
+    }
+
+    return date.toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+    });
+}
+
+
+function showElement(element) {
+    if (element) {
+        element.classList.remove("hidden");
+    }
+}
+
+
+function hideElement(element) {
+    if (element) {
+        element.classList.add("hidden");
+    }
+}
+
+
+function setText(id, value) {
+    const element = getElement(id);
+
+    if (element) {
+        element.textContent =
+            value === null || value === undefined
+                ? "-"
+                : value;
+    }
+}
+
+
+function setHtml(id, value) {
+    const element = getElement(id);
+
+    if (element) {
+        element.innerHTML = value || "";
+    }
+}
+
+
+
+/* =========================================================
+   AUTH TOKEN HELPER
+   Supports the existing login.js sessionStorage token
+   and legacy localStorage token keys.
+========================================================= */
+
+function getFacultyToken() {
+    const tokenKeys = [
+        "auth_token",
+        "faculty_token",
+        "facultyToken",
+        "faculty_access_token",
+        "access_token",
+        "token",
+        "portal_token"
+    ];
+
+    for (const storage of [sessionStorage, localStorage]) {
+        for (const key of tokenKeys) {
+            const token = storage.getItem(key);
+
+            if (token && token.trim()) {
+                return token.trim();
+            }
+        }
+    }
+
+    return "";
+}
+
+function getStudentToken() {
+    const tokenKeys = [
+        "student_token",
+        "studentToken"
+    ];
+
+    for (const storage of [sessionStorage, localStorage]) {
+        for (const key of tokenKeys) {
+            const token = storage.getItem(key);
+
+            if (token && token.trim()) {
+                return token.trim();
+            }
+        }
+    }
+
+    return "";
+}
+
+
+
+
+/* =========================================================
+   API REQUEST
+========================================================= */
+
+async function apiRequest(url, options = {}) {
+    const headers = {
+        ...(options.headers || {})
+    };
+
+    const isFormData =
+        typeof FormData !== "undefined" &&
+        options.body instanceof FormData;
+
+    if (!isFormData && !headers["Content-Type"]) {
+        headers["Content-Type"] = "application/json";
+    }
+
+    // Use the logged-in faculty token for faculty API requests.
+    const token = getFacultyToken();
+
+    if (token) {
+        // Always use the current token rather than a stale header.
+        headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const requestOptions = {
+        ...options,
+        headers,
+        credentials: "same-origin"
+    };
+
+    let response;
+
+    try {
+        response = await fetch(url, requestOptions);
+    } catch (error) {
+        console.error("API network error:", error);
+
+        throw new Error(
+            "Cannot connect to the server. Check that your backend is running."
+        );
+    }
+
+    let data = null;
+
+    try {
+        data = await response.json();
+    } catch {
+        data = null;
+    }
+
+    if (!response.ok) {
+        const message =
+            data?.detail ||
+            data?.message ||
+            data?.error ||
+            `Request failed with status ${response.status}`;
+
+        if (response.status === 401 || response.status === 403) {
+            console.error(
+                "Authentication error:",
+                response.status,
+                message,
+                "Token found:",
+                Boolean(token)
+            );
+        }
+
+        throw new Error(message);
+    }
+
+    return data;
+}
+
+
+
+/* =========================================================
+   PAGE INITIALIZATION
+========================================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    async () => {
+
+        setupNavigation();
+        setupNotificationButton();
 
         /*
-            The backend may return strengths in different formats.
+         * The current index.html does not contain a Subject
+         * input. This creates it automatically.
+         */
+        setupFacultySubjectField();
 
-            Example:
-
-            {
-                "strength": "Strong academic performance",
-                "evidence": "CGPA is above 8"
-            }
-
-            Or:
-
-            {
-                "title": "Good attendance",
-                "description": "Attendance is above 85%"
-            }
-        */
-
-
-        const title =
-            strength.strength ||
-            strength.title ||
-            strength.name ||
-            strength.area ||
-            strength.label;
-
-
-        const evidence =
-            strength.evidence ||
-            strength.description ||
-            strength.reason ||
-            strength.details;
-
-
-        // Title + evidence
-        if (
-            title &&
-            evidence
-        ) {
-
-            return (
-                String(title) +
-                " — " +
-                String(evidence)
-            );
-
-        }
-
-
-        // Only title
-        if (title) {
-
-            return String(title);
-
-        }
-
-
-        // Only evidence
-        if (evidence) {
-
-            return String(evidence);
-
-        }
-
-
-        // ----------------------------------------------------
-        // FALLBACK
-        // ----------------------------------------------------
 
         try {
 
-            const values =
-                Object.values(strength)
-                    .filter(
-                        value =>
-                            value !== null &&
-                            value !== undefined &&
-                            String(value).trim() !== ""
-                    );
-
-
-            if (values.length) {
-
-                return values
-                    .map(value => String(value))
-                    .join(" — ");
-
-            }
+            await loadFacultyProfile();
 
         } catch (error) {
 
             console.error(
-                "Unable to format student strength:",
+                "Faculty profile error:",
                 error
             );
 
         }
 
 
-        return "Strength identified";
+        try {
 
-    }
+            await loadDashboard();
 
+        } catch (error) {
 
-    return String(strength);
+            console.error(
+                "Dashboard loading error:",
+                error
+            );
 
-}
-
-
-// ============================================================
-// API HELPER
-// ============================================================
-
-async function apiFetch(url, options = {}) {
-
-    const response =
-        await fetch(
-            url,
-            options
-        );
-
-
-    if (!response.ok) {
-
-        let message =
-            `Request failed: ${response.status}`;
+        }
 
 
         try {
 
-            const data =
-                await response.json();
-
-
-            if (data.detail) {
-
-                message =
-                    data.detail;
-
-            }
+            await loadStudents();
 
         } catch (error) {
 
-            // Ignore invalid JSON.
+            console.error(
+                "Student loading error:",
+                error
+            );
 
         }
 
 
-        throw new Error(
-            message
-        );
+        try {
+
+            await loadFacultyNotes();
+
+        } catch (error) {
+
+            console.error(
+                "Faculty notes loading error:",
+                error
+            );
+
+        }
+
+
+        try {
+
+            await loadFacultyInterventions();
+
+        } catch (error) {
+
+            console.error(
+                "Intervention loading error:",
+                error
+            );
+
+        }
+
+
+        try {
+
+            await loadFacultyReports();
+
+        } catch (error) {
+
+            console.error(
+                "Report loading error:",
+                error
+            );
+
+        }
+
+
+        setTodayAsMinimumDate();
 
     }
+);
 
 
-    return response;
+/* =========================================================
+   NAVIGATION
+========================================================= */
+
+function setupNavigation() {
+
+    const navLinks =
+        document.querySelectorAll(".nav-link");
+
+
+    navLinks.forEach(link => {
+
+        link.addEventListener(
+            "click",
+            () => {
+
+                navLinks.forEach(item => {
+
+                    item.classList.remove(
+                        "active"
+                    );
+
+                });
+
+
+                link.classList.add(
+                    "active"
+                );
+
+            }
+        );
+
+    });
+
+
+    window.addEventListener(
+        "scroll",
+        () => {
+
+            const sections = [
+                "dashboard",
+                "students",
+                "analytics",
+                "interventions"
+            ];
+
+
+            let current =
+                "dashboard";
+
+
+            sections.forEach(
+                sectionId => {
+
+                    const section =
+                        document.getElementById(
+                            sectionId
+                        );
+
+
+                    if (!section) {
+                        return;
+                    }
+
+
+                    const rect =
+                        section.getBoundingClientRect();
+
+
+                    if (rect.top <= 160) {
+                        current = sectionId;
+                    }
+
+                }
+            );
+
+
+            navLinks.forEach(link => {
+
+                const href =
+                    link.getAttribute("href");
+
+
+                link.classList.toggle(
+                    "active",
+                    href === `#${current}`
+                );
+
+            });
+
+        }
+    );
 
 }
 
 
-// ============================================================
-// LOAD DASHBOARD SUMMARY
-// ============================================================
+/* =========================================================
+   FACULTY PROFILE
+========================================================= */
 
-async function loadSummary() {
+async function loadFacultyProfile() {
 
     try {
-
-        const response =
-            await apiFetch(
-                "/api/summary"
-            );
-
 
         const data =
-            await response.json();
-
-
-        if (getElement("totalStudents")) {
-
-            getElement(
-                "totalStudents"
-            ).textContent =
-                safeNumber(
-                    data.total_students
-                );
-
-        }
-
-
-        if (getElement("averageScore")) {
-
-            getElement(
-                "averageScore"
-            ).textContent =
-                safeNumber(
-                    data.average_success_score
-                ).toFixed(1);
-
-        }
-
-
-        if (getElement("onTrack")) {
-
-            getElement(
-                "onTrack"
-            ).textContent =
-                safeNumber(
-                    data.on_track
-                );
-
-        }
-
-
-        if (getElement("needsAttention")) {
-
-            getElement(
-                "needsAttention"
-            ).textContent =
-                safeNumber(
-                    data.needs_attention
-                );
-
-        }
-
-
-        if (getElement("immediateSupport")) {
-
-            getElement(
-                "immediateSupport"
-            ).textContent =
-                safeNumber(
-                    data.immediate_support
-                );
-
-        }
-
-
-        if (getElement("averageCgpa")) {
-
-            getElement(
-                "averageCgpa"
-            ).textContent =
-                safeNumber(
-                    data.average_cgpa
-                ).toFixed(2);
-
-        }
-
-
-        if (getElement("averageAttendance")) {
-
-            getElement(
-                "averageAttendance"
-            ).textContent =
-                safeNumber(
-                    data.average_attendance
-                ).toFixed(1) + "%";
-
-        }
-
-
-        if (getElement("placementReady")) {
-
-            getElement(
-                "placementReady"
-            ).textContent =
-                safeNumber(
-                    data.placement_ready
-                );
-
-        }
-
-
-        const total =
-            Math.max(
-                safeNumber(
-                    data.total_students
-                ),
-                1
+            await apiRequest(
+                "/api/faculty/me",
+                {
+                    method: "GET"
+                }
             );
 
 
-        const onTrackPercent =
-            safeNumber(
-                data.on_track
-            ) /
-            total *
-            100;
+        const faculty =
+            data?.faculty ||
+            data?.data ||
+            data;
 
 
-        const attentionPercent =
-            safeNumber(
-                data.needs_attention
-            ) /
-            total *
-            100;
+        const name =
+            faculty?.name ||
+            faculty?.faculty_name ||
+            faculty?.username ||
+            "Faculty";
 
 
-        const supportPercent =
-            safeNumber(
-                data.immediate_support
-            ) /
-            total *
-            100;
-
-
-        setBarWidth(
-            "onTrackBar",
-            onTrackPercent
+        setText(
+            "facultyDisplayName",
+            name
         );
 
 
-        setBarWidth(
-            "attentionBar",
-            attentionPercent
-        );
-
-
-        setBarWidth(
-            "supportBar",
-            supportPercent
-        );
-
-
-        if (getElement("onTrackPercent")) {
-
-            getElement(
-                "onTrackPercent"
-            ).textContent =
-                onTrackPercent.toFixed(1) +
-                "%";
-
-        }
-
-
-        if (getElement("attentionPercent")) {
-
-            getElement(
-                "attentionPercent"
-            ).textContent =
-                attentionPercent.toFixed(1) +
-                "%";
-
-        }
-
-
-        if (getElement("supportPercent")) {
-
-            getElement(
-                "supportPercent"
-            ).textContent =
-                supportPercent.toFixed(1) +
-                "%";
-
-        }
-
-
-        updateNotifications(
-            data
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "Summary error:",
-            error
-        );
-
-    }
-
-}
-
-
-// ============================================================
-// SET BAR WIDTH
-// ============================================================
-
-function setBarWidth(
-    id,
-    percentage
-) {
-
-    const element =
-        getElement(id);
-
-
-    if (!element) {
-        return;
-    }
-
-
-    const safePercentage =
-        Math.max(
-            0,
-            Math.min(
-                100,
-                safeNumber(
-                    percentage
-                )
-            )
-        );
-
-
-    element.style.width =
-        safePercentage + "%";
-
-}
-
-
-// ============================================================
-// LOAD STUDENT SEGMENTS
-// ============================================================
-
-async function loadSegments() {
-
-    try {
-
-        const response =
-            await apiFetch(
-                "/api/segments"
-            );
-
-
-        const segments =
-            await response.json();
-
-
-        const container =
-            getElement("segments");
-
-
-        if (!container) {
-            return;
-        }
-
-
-        container.innerHTML =
-            "";
+        const facultyNameInput =
+            getElement("facultyName");
 
 
         if (
-            !Array.isArray(
-                segments
-            ) ||
-            !segments.length
+            facultyNameInput &&
+            !facultyNameInput.value.trim()
         ) {
 
-            container.innerHTML = `
-                <p>
-                    No segmentation data available.
-                </p>
-            `;
-
-            return;
+            facultyNameInput.value =
+                name;
 
         }
 
+    } catch (error) {
 
-        segments.forEach(
-            item => {
-
-                const div =
-                    document.createElement(
-                        "div"
-                    );
+        console.warn(
+            "Could not load faculty profile:",
+            error
+        );
 
 
-                div.className =
-                    "segment-item";
+        setText(
+            "facultyDisplayName",
+            "Faculty"
+        );
+
+    }
+
+}
 
 
-                div.innerHTML = `
-                    <span>
-                        ${escapeHtml(
-                            item.segment
-                        )}
-                    </span>
+/* =========================================================
+   DASHBOARD SUMMARY
+========================================================= */
 
-                    <strong>
-                        ${safeNumber(
-                            item.count
-                        )}
-                    </strong>
-                `;
+async function loadDashboard() {
 
-
-                container.appendChild(
-                    div
-                );
-
+    const data =
+        await apiRequest(
+            "/api/summary",
+            {
+                method: "GET"
             }
         );
 
 
-    } catch (error) {
+    const summary =
+        data?.summary ||
+        data?.data ||
+        data;
 
-        console.error(
-            "Segments error:",
-            error
+
+    renderDashboardSummary(
+        summary
+    );
+
+
+    if (data?.segments) {
+
+        renderSegments(
+            data.segments
+        );
+
+    }
+
+
+    if (summary?.segments) {
+
+        renderSegments(
+            summary.segments
         );
 
     }
@@ -625,95 +574,124 @@ async function loadSegments() {
 }
 
 
-// ============================================================
-// LOAD DEPARTMENTS
-// ============================================================
 
-async function loadDepartments() {
+function renderDashboardSummary(summary) {
+    summary = summary || {};
 
-    try {
+    const safeNumber = (value) => {
+        const number = Number(value);
+        return Number.isFinite(number) && number >= 0
+            ? number
+            : 0;
+    };
 
-        const response =
-            await apiFetch(
-                "/api/departments"
-            );
+    const totalStudents = safeNumber(
+        summary.total_students ?? summary.totalStudents
+    );
 
+    const onTrackCount = safeNumber(
+        summary.on_track ?? summary.onTrack
+    );
 
-        const departments =
-            await response.json();
+    const attentionCount = safeNumber(
+        summary.needs_attention ?? summary.needsAttention
+    );
 
+    const supportCount = safeNumber(
+        summary.immediate_support ?? summary.immediateSupport
+    );
 
-        const select =
-            getElement(
-                "departmentFilter"
-            );
+    // Calculate percentages from backend counts.
+    const percentage = (count) => {
+        if (totalStudents === 0) return 0;
 
+        return Math.round((count / totalStudents) * 1000) / 10;
+    };
 
-        if (!select) {
-            return;
+    const onTrack = percentage(onTrackCount);
+    const attention = percentage(attentionCount);
+    const support = percentage(supportCount);
+
+    // Update percentage labels.
+    setText("onTrackPercent", `${onTrack}%`);
+    setText("attentionPercent", `${attention}%`);
+    setText("supportPercent", `${support}%`);
+
+    // Update progress bars, if present.
+    const setBarWidth = (id, value) => {
+        const bar = getElement(id);
+
+        if (bar) {
+            bar.style.width = `${Math.min(100, value)}%`;
+            bar.setAttribute("aria-valuenow", String(value));
         }
+    };
 
+    setBarWidth("onTrackBar", onTrack);
+    setBarWidth("attentionBar", attention);
+    setBarWidth("supportBar", support);
 
-        const previousValue =
-            select.value;
-
-
-        select.innerHTML =
-            '<option value="All">All Departments</option>';
-
-
-        departments.forEach(
-            department => {
-
-                const option =
-                    document.createElement(
-                        "option"
-                    );
-
-
-                option.value =
-                    department;
-
-
-                option.textContent =
-                    department;
-
-
-                select.appendChild(
-                    option
-                );
-
-            }
-        );
-
-
-        if (
-            departments.includes(
-                previousValue
-            )
-        ) {
-
-            select.value =
-                previousValue;
-
-        }
-
-
-    } catch (error) {
-
-        console.error(
-            "Departments error:",
-            error
-        );
-
-    }
-
+    // Update other dashboard summary cards when present.
+    setText("totalStudents", totalStudents);
+    setText(
+        "averageSuccessScore",
+        safeNumber(summary.average_success_score).toFixed(1)
+    );
+    setText(
+        "averageAttendance",
+        `${safeNumber(summary.average_attendance).toFixed(1)}%`
+    );
+    setText(
+        "averageCGPA",
+        safeNumber(summary.average_cgpa).toFixed(1)
+    );
+    setText(
+        "placementReady",
+        safeNumber(summary.placement_ready)
+    );
+    setText(
+        "decliningStudents",
+        safeNumber(summary.declining_students)
+    );
+    setText(
+        "improvingStudents",
+        safeNumber(summary.improving_students)
+    );
+    setText(
+        "criticalStudents",
+        safeNumber(summary.critical_students)
+    );
+    setText(
+        "highRiskStudents",
+        safeNumber(summary.high_risk_students)
+    );
+    setText(
+        "requiringIntervention",
+        safeNumber(summary.requiring_intervention)
+    );
+    setText(
+        "lowAttendanceStudents",
+        safeNumber(summary.low_attendance_students)
+    );
+    setText(
+        "backlogStudents",
+        safeNumber(summary.backlog_students)
+    );
+    setText(
+        "pendingInterventions",
+        safeNumber(summary.pending_interventions)
+    );
+    setText(
+        "completedInterventions",
+        safeNumber(summary.completed_interventions)
+    );
 }
 
 
-// ============================================================
-// LOAD STUDENTS
-// ============================================================
+
+/* =========================================================
+   STUDENTS
+========================================================= */
 
 async function loadStudents() {
 
@@ -721,146 +699,326 @@ async function loadStudents() {
         ++studentLoadRequest;
 
 
+    const search =
+        getElement("search")
+            ?.value.trim() ||
+        "";
+
+
+    const risk =
+        getElement("riskFilter")
+            ?.value ||
+        "All";
+
+
+    const department =
+        getElement("departmentFilter")
+            ?.value ||
+        "All";
+
+
+    const trend =
+        getElement("trendFilter")
+            ?.value ||
+        "All";
+
+
+    const priority =
+        getElement("priorityFilter")
+            ?.value ||
+        "All";
+
+
+    let data;
+
+
     try {
 
-        const searchElement =
-            getElement("search");
-
-
-        const riskElement =
-            getElement("riskFilter");
-
-
-        const departmentElement =
-            getElement("departmentFilter");
-
-
-        const search =
-            searchElement
-                ? searchElement.value.trim()
-                : "";
-
-
-        const risk =
-            riskElement
-                ? riskElement.value
-                : "All";
-
-
-        const department =
-            departmentElement
-                ? departmentElement.value
-                : "All";
-
-
-        const params =
-            new URLSearchParams();
-
-
-        if (search) {
-
-            params.append(
-                "search",
-                search
+        data =
+            await apiRequest(
+                "/api/students",
+                {
+                    method: "GET"
+                }
             );
-
-        }
-
-
-        if (
-            risk &&
-            risk !== "All"
-        ) {
-
-            params.append(
-                "risk",
-                risk
-            );
-
-        }
-
-
-        if (
-            department &&
-            department !== "All"
-        ) {
-
-            params.append(
-                "department",
-                department
-            );
-
-        }
-
-
-        let url =
-            "/api/students";
-
-
-        const query =
-            params.toString();
-
-
-        if (query) {
-
-            url +=
-                "?" +
-                query;
-
-        }
-
-
-        const response =
-            await apiFetch(
-                url
-            );
-
-
-        const students =
-            await response.json();
-
-
-        if (
-            requestId !==
-            studentLoadRequest
-        ) {
-
-            return;
-
-        }
-
-
-        currentStudents =
-            Array.isArray(
-                students
-            )
-                ? students
-                : [];
-
-
-        renderStudentTable(
-            currentStudents
-        );
-
 
     } catch (error) {
 
         console.error(
-            "Students error:",
+            "Could not load students:",
             error
         );
 
 
-        renderTableError();
+        renderStudentTable([]);
+
+        return;
+
+    }
+
+
+    if (
+        requestId !==
+        studentLoadRequest
+    ) {
+
+        return;
+
+    }
+
+
+    let students =
+        data?.students ||
+        data?.data ||
+        data ||
+        [];
+
+
+    if (!Array.isArray(students)) {
+
+        students = [];
+
+    }
+
+
+    currentStudents =
+        students;
+
+
+    populateDepartmentFilter(
+        students
+    );
+
+
+    students =
+        students.filter(
+            student => {
+
+                const studentName =
+                    String(
+                        student.name ||
+                        student.student_name ||
+                        ""
+                    ).toLowerCase();
+
+
+                const studentId =
+                    String(
+                        student.student_id ||
+                        student.id ||
+                        ""
+                    ).toLowerCase();
+
+
+                const departmentValue =
+                    String(
+                        student.department ||
+                        ""
+                    );
+
+
+                const riskValue =
+                    String(
+                        student.risk_level ||
+                        student.risk ||
+                        student.risk_tier ||
+                        ""
+                    );
+
+
+                const trendValue =
+                    String(
+                        student.performance_trend ||
+                        student.trend ||
+                        ""
+                    );
+
+
+                const priorityValue =
+                    String(
+                        student.priority ||
+                        student.priority_tier ||
+                        ""
+                    );
+
+
+                const matchesSearch =
+                    !search ||
+                    studentName.includes(
+                        search.toLowerCase()
+                    ) ||
+                    studentId.includes(
+                        search.toLowerCase()
+                    );
+
+
+                const matchesRisk =
+                    risk === "All" ||
+                    normalizeRisk(
+                        riskValue
+                    ) ===
+                    normalizeRisk(
+                        risk
+                    );
+
+
+                const matchesDepartment =
+                    department === "All" ||
+                    departmentValue ===
+                    department;
+
+
+                const matchesTrend =
+                    trend === "All" ||
+                    trendValue.toLowerCase() ===
+                    trend.toLowerCase();
+
+
+                const matchesPriority =
+                    priority === "All" ||
+                    priorityValue.toLowerCase() ===
+                    priority.toLowerCase();
+
+
+                return (
+                    matchesSearch &&
+                    matchesRisk &&
+                    matchesDepartment &&
+                    matchesTrend &&
+                    matchesPriority
+                );
+
+            }
+        );
+
+
+    renderStudentTable(
+        students
+    );
+
+}
+
+
+function normalizeRisk(value) {
+
+    const text =
+        String(value || "")
+            .toLowerCase();
+
+
+    if (
+        text.includes("critical") ||
+        text.includes("immediate")
+    ) {
+
+        return "immediate support";
+
+    }
+
+
+    if (
+        text.includes("high") ||
+        text.includes("attention") ||
+        text.includes("medium")
+    ) {
+
+        return "needs attention";
+
+    }
+
+
+    if (
+        text.includes("low") ||
+        text.includes("on track")
+    ) {
+
+        return "on track";
+
+    }
+
+
+    return text;
+
+}
+
+
+function populateDepartmentFilter(
+    students
+) {
+
+    const select =
+        getElement(
+            "departmentFilter"
+        );
+
+
+    if (!select) {
+        return;
+    }
+
+
+    const currentValue =
+        select.value ||
+        "All";
+
+
+    const departments =
+        [
+            ...new Set(
+                students
+                    .map(
+                        student =>
+                            student.department
+                    )
+                    .filter(Boolean)
+            )
+        ]
+        .sort();
+
+
+    select.innerHTML = `
+        <option value="All">
+            All
+        </option>
+
+        ${
+            departments
+                .map(
+                    department => `
+                        <option
+                            value="${escapeHtml(
+                                department
+                            )}"
+                        >
+                            ${escapeHtml(
+                                department
+                            )}
+                        </option>
+                    `
+                )
+                .join("")
+        }
+    `;
+
+
+    if (
+        departments.includes(
+            currentValue
+        )
+    ) {
+
+        select.value =
+            currentValue;
+
+    } else {
+
+        select.value =
+            "All";
 
     }
 
 }
 
-
-// ============================================================
-// RENDER STUDENT TABLE
-// ============================================================
 
 function renderStudentTable(
     students
@@ -877,682 +1035,493 @@ function renderStudentTable(
     }
 
 
-    table.innerHTML =
-        "";
-
-
-    if (
-        !Array.isArray(
-            students
-        ) ||
-        !students.length
-    ) {
+    if (!students.length) {
 
         table.innerHTML = `
             <tr>
-                <td
-                    colspan="8"
-                    style="
-                        text-align:center;
-                        padding:35px;
-                        color:#64748b;
-                    "
-                >
-                    No students found for the selected filters.
+
+                <td colspan="8">
+
+                    <div class="empty-state">
+                        No students match the selected filters.
+                    </div>
+
                 </td>
+
             </tr>
         `;
 
         return;
-
     }
 
 
-    students.forEach(
-        student => {
+    table.innerHTML =
+        students.map(
+            student => {
 
-            const row =
-                document.createElement(
-                    "tr"
-                );
+                const id =
+                    student.student_id ||
+                    student.id ||
+                    "";
 
 
-            row.style.cursor =
-                "pointer";
+                const name =
+                    student.name ||
+                    student.student_name ||
+                    "Student";
 
 
-            const studentCell =
-                document.createElement(
-                    "td"
-                );
+                const department =
+                    student.department ||
+                    "-";
 
 
-            studentCell.innerHTML = `
-                <strong>
-                    ${escapeHtml(
-                        student.student_id
-                    )}
-                </strong>
+                const year =
+                    student.year ||
+                    student.semester ||
+                    "-";
 
-                <br>
 
-                <small>
-                    ${escapeHtml(
-                        student.name
-                    )}
-                </small>
-            `;
+                const priority =
+                    student.priority ||
+                    student.priority_tier ||
+                    student.risk_level ||
+                    "Stable";
 
 
-            const departmentCell =
-                document.createElement(
-                    "td"
-                );
+                const cgpa =
+                    student.cgpa ??
+                    student.current_cgpa ??
+                    "-";
 
 
-            departmentCell.textContent =
-                student.department ||
-                "-";
+                const trend =
+                    student.performance_trend ||
+                    student.trend ||
+                    "Stable";
 
 
-            const cgpaCell =
-                document.createElement(
-                    "td"
-                );
+                const attendance =
+                    student.attendance ??
+                    student.attendance_percentage ??
+                    "-";
 
 
-            cgpaCell.textContent =
-                safeNumber(
-                    student.cgpa
-                ).toFixed(2);
+                const risk =
+                    student.ml_risk ||
+                    student.risk_level ||
+                    student.risk ||
+                    "-";
 
 
-            const attendanceCell =
-                document.createElement(
-                    "td"
-                );
+                const successScore =
+                    student.success_score ??
+                    student.successScore ??
+                    "-";
 
 
-            attendanceCell.textContent =
-                safeNumber(
-                    student.attendance
-                ).toFixed(1) +
-                "%";
+                return `
+                    <tr>
 
+                        <td>
 
-            const scoreCell =
-                document.createElement(
-                    "td"
-                );
+                            <div class="student-table-name">
 
+                                <strong>
+                                    ${escapeHtml(name)}
+                                </strong>
 
-            const score =
-                safeNumber(
-                    student.success_score
-                );
+                                <small>
+                                    ${escapeHtml(id)}
+                                </small>
 
+                            </div>
 
-            scoreCell.innerHTML = `
-                <strong>
-                    ${score.toFixed(1)}
-                </strong>
-            `;
+                        </td>
 
 
-            const riskCell =
-                document.createElement(
-                    "td"
-                );
+                        <td>
 
+                            ${escapeHtml(
+                                department
+                            )}
 
-            const riskBadge =
-                document.createElement(
-                    "span"
-                );
+                            <br>
 
+                            <small>
+                                Year
+                                ${escapeHtml(
+                                    year
+                                )}
+                            </small>
 
-            riskBadge.className =
-                "risk-badge " +
-                getRiskClass(
-                    student.risk_level
-                );
+                        </td>
 
 
-            riskBadge.textContent =
-                student.risk_level ||
-                "-";
+                        <td>
 
+                            <span class="priority-badge">
+                                ${escapeHtml(
+                                    priority
+                                )}
+                            </span>
 
-            riskCell.appendChild(
-                riskBadge
-            );
+                        </td>
 
 
-            const segmentCell =
-                document.createElement(
-                    "td"
-                );
+                        <td>
 
+                            <strong>
+                                ${escapeHtml(
+                                    cgpa
+                                )}
+                            </strong>
 
-            segmentCell.textContent =
-                student.segment ||
-                "-";
+                            <br>
 
+                            <small>
+                                ${escapeHtml(
+                                    trend
+                                )}
+                            </small>
 
-            const actionCell =
-                document.createElement(
-                    "td"
-                );
+                        </td>
 
 
-            const viewButton =
-                document.createElement(
-                    "button"
-                );
+                        <td>
+                            ${escapeHtml(
+                                attendance
+                            )}%
+                        </td>
 
 
-            viewButton.type =
-                "button";
+                        <td>
+                            ${escapeHtml(
+                                risk
+                            )}
+                        </td>
 
 
-            viewButton.className =
-                "outline-button";
+                        <td>
 
+                            <strong>
+                                ${escapeHtml(
+                                    successScore
+                                )}
+                            </strong>
 
-            viewButton.textContent =
-                "View";
+                        </td>
 
 
-            viewButton.addEventListener(
-                "click",
-                event => {
+                        <td>
 
-                    event.stopPropagation();
+                            <button
+                                type="button"
+                                class="outline-button"
+                                onclick="openStudentProfile('${escapeHtml(id)}')"
+                            >
+                                View Profile
+                            </button>
 
-                    loadStudentProfile(
-                        student.student_id
-                    );
+                        </td>
 
-                }
-            );
+                    </tr>
+                `;
 
-
-            actionCell.appendChild(
-                viewButton
-            );
-
-
-            row.appendChild(
-                studentCell
-            );
-
-
-            row.appendChild(
-                departmentCell
-            );
-
-
-            row.appendChild(
-                cgpaCell
-            );
-
-
-            row.appendChild(
-                attendanceCell
-            );
-
-
-            row.appendChild(
-                scoreCell
-            );
-
-
-            row.appendChild(
-                riskCell
-            );
-
-
-            row.appendChild(
-                segmentCell
-            );
-
-
-            row.appendChild(
-                actionCell
-            );
-
-
-            row.addEventListener(
-                "click",
-                () => {
-
-                    loadStudentProfile(
-                        student.student_id
-                    );
-
-                }
-            );
-
-
-            table.appendChild(
-                row
-            );
-
-        }
-    );
+            }
+        ).join("");
 
 }
 
 
-// ============================================================
-// TABLE ERROR
-// ============================================================
+/* =========================================================
+   STUDENT FILTERS
+========================================================= */
 
-function renderTableError() {
+function clearStudentFilters() {
 
-    const table =
-        getElement(
-            "studentTable"
-        );
+    const search =
+        getElement("search");
 
 
-    if (!table) {
-        return;
-    }
+    const risk =
+        getElement("riskFilter");
 
 
-    table.innerHTML = `
-        <tr>
-            <td
-                colspan="8"
-                style="
-                    text-align:center;
-                    padding:35px;
-                    color:#dc2626;
-                "
-            >
-                Unable to load student data.
-                Please refresh the dashboard.
-            </td>
-        </tr>
-    `;
+    const department =
+        getElement("departmentFilter");
 
-}
 
-
-// ============================================================
-// RISK CSS CLASS
-// ============================================================
-
-function getRiskClass(
-    risk
-) {
-
-    if (
-        risk === "On Track"
-    ) {
-
-        return "risk-on-track";
-
-    }
-
-
-    if (
-        risk === "Needs Attention"
-    ) {
-
-        return "risk-needs-attention";
-
-    }
-
-
-    if (
-        risk === "Immediate Support"
-    ) {
-
-        return "risk-immediate-support";
-
-    }
-
-
-    return "";
-
-}
-
-
-// ============================================================
-// PRIORITY CSS CLASS
-// ============================================================
-
-function getPriorityClass(
-    priority
-) {
-
-    if (
-        priority === "Critical"
-    ) {
-
-        return "priority-critical";
-
-    }
-
-
-    if (
-        priority === "High"
-    ) {
-
-        return "priority-high";
-
-    }
-
-
-    if (
-        priority === "Normal"
-    ) {
-
-        return "priority-normal";
-
-    }
-
-
-    return "";
-
-}
-
-
-// ============================================================
-// DISPLAY AI RECOMMENDATION + STUDENT STRENGTHS
-// ============================================================
-
-function displayRecommendation(
-    recommendation
-) {
-
-    const priorityElement =
-        getElement(
-            "recommendationPriority"
-        );
-
-
-    const overallElement =
-        getElement(
-            "overallRecommendation"
-        );
-
-
-    const actionsElement =
-        getElement(
-            "recommendedActions"
-        );
-
-
-    if (
-        !priorityElement ||
-        !overallElement ||
-        !actionsElement
-    ) {
-
-        return;
-
-    }
-
-
-    priorityElement.textContent =
-        "";
-
-
-    priorityElement.className =
-        "priority-badge";
-
-
-    overallElement.textContent =
-        "";
-
-
-    actionsElement.innerHTML =
-        "";
-
-
-    if (!recommendation) {
-
-        overallElement.textContent =
-            "No intervention recommendation is currently available.";
-
-        return;
-
-    }
+    const trend =
+        getElement("trendFilter");
 
 
     const priority =
-        recommendation.priority ||
-        "Normal";
+        getElement("priorityFilter");
 
 
-    priorityElement.textContent =
-        priority;
+    if (search) {
+        search.value = "";
+    }
 
 
-    priorityElement.className =
-        "priority-badge " +
-        getPriorityClass(
-            priority
+    if (risk) {
+        risk.value = "All";
+    }
+
+
+    if (department) {
+        department.value = "All";
+    }
+
+
+    if (trend) {
+        trend.value = "All";
+    }
+
+
+    if (priority) {
+        priority.value = "All";
+    }
+
+
+    loadStudents();
+
+}
+
+
+function filterStudentsByPriority(
+    priority
+) {
+
+    const filter =
+        getElement(
+            "priorityFilter"
         );
 
 
-    overallElement.textContent =
-        recommendation.overall_recommendation ||
-        "";
+    if (filter) {
+        filter.value =
+            priority;
+    }
 
 
-    // --------------------------------------------------------
-    // RECOMMENDED ACTIONS
-    // --------------------------------------------------------
+    loadStudents();
 
-    const actions =
-        Array.isArray(
-            recommendation.recommended_actions
-        )
-            ? recommendation.recommended_actions
-            : [];
+}
 
 
-    actions.forEach(
-        action => {
+function filterStudentsByTrend(
+    trend
+) {
 
-            const li =
-                document.createElement(
-                    "li"
-                );
-
-
-            li.textContent =
-                action;
-
-
-            actionsElement.appendChild(
-                li
-            );
-
-        }
-    );
-
-
-    // --------------------------------------------------------
-    // STUDENT STRENGTHS
-    // --------------------------------------------------------
-
-    const strengths =
-        Array.isArray(
-            recommendation.student_strengths
-        )
-            ? recommendation.student_strengths
-            : [];
-
-
-    if (strengths.length) {
-
-        const heading =
-            document.createElement(
-                "li"
-            );
-
-
-        heading.innerHTML =
-            "<strong>Student Strengths</strong>";
-
-
-        heading.style.listStyle =
-            "none";
-
-
-        heading.style.marginTop =
-            "12px";
-
-
-        actionsElement.appendChild(
-            heading
+    const filter =
+        getElement(
+            "trendFilter"
         );
 
 
-        strengths.forEach(
-            strength => {
+    if (filter) {
+        filter.value =
+            trend;
+    }
 
-                const formattedStrength =
-                    formatStudentStrength(
-                        strength
+
+    loadStudents();
+
+}
+
+
+function filterStudentsByMetric(
+    metric
+) {
+
+    clearStudentFilters();
+
+
+    if (
+        !Array.isArray(
+            currentStudents
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    let filtered =
+        currentStudents;
+
+
+    if (
+        metric ===
+        "requiring_intervention"
+    ) {
+
+        filtered =
+            currentStudents.filter(
+                student => {
+
+                    const risk =
+                        String(
+                            student.risk_level ||
+                            student.risk ||
+                            ""
+                        ).toLowerCase();
+
+
+                    return (
+                        risk.includes("high") ||
+                        risk.includes("critical") ||
+                        risk.includes("immediate")
                     );
 
-
-                if (!formattedStrength) {
-                    return;
                 }
-
-
-                const li =
-                    document.createElement(
-                        "li"
-                    );
-
-
-                li.textContent =
-                    formattedStrength;
-
-
-                li.style.marginLeft =
-                    "12px";
-
-
-                actionsElement.appendChild(
-                    li
-                );
-
-            }
-        );
+            );
 
     }
 
 
     if (
-        !actions.length &&
-        !strengths.length
+        metric ===
+        "low_attendance"
     ) {
 
-        const li =
-            document.createElement(
-                "li"
+        filtered =
+            currentStudents.filter(
+                student =>
+                    safeNumber(
+                        student.attendance
+                    ) < 75
             );
 
-
-        li.textContent =
-            "Continue regular monitoring and student support.";
+    }
 
 
-        actionsElement.appendChild(
-            li
-        );
+    if (
+        metric ===
+        "backlogs"
+    ) {
+
+        filtered =
+            currentStudents.filter(
+                student =>
+                    safeNumber(
+                        student.backlogs
+                    ) >= 2
+            );
 
     }
+
+
+    if (
+        metric ===
+        "pending_interventions"
+    ) {
+
+        filtered =
+            currentStudents.filter(
+                student =>
+                    safeNumber(
+                        student.pending_interventions
+                    ) > 0
+            );
+
+    }
+
+
+    if (
+        metric ===
+        "completed_interventions"
+    ) {
+
+        filtered =
+            currentStudents.filter(
+                student =>
+                    safeNumber(
+                        student.completed_interventions
+                    ) > 0
+            );
+
+    }
+
+
+    renderStudentTable(
+        filtered
+    );
 
 }
 
 
-// ============================================================
-// LOAD INDIVIDUAL STUDENT PROFILE
-// ============================================================
+/* =========================================================
+   STUDENT PROFILE
+========================================================= */
 
-async function loadStudentProfile(
+async function openStudentProfile(
     studentId
 ) {
 
-    if (!studentId) {
-        return;
-    }
-
-
     try {
 
-        const response =
-            await apiFetch(
-                "/api/student/" +
-                encodeURIComponent(
-                    studentId
-                )
+        const data =
+            await apiRequest(
+                `/api/student/${encodeURIComponent(studentId)}`,
+                {
+                    method: "GET"
+                }
             );
-
-
-        const student =
-            await response.json();
 
 
         activeStudent =
-            student;
+            data?.student ||
+            data?.data ||
+            data;
 
 
-        fillStudentProfile(
-            student
-        );
+        if (!activeStudent) {
 
-
-        await loadFacultyNotes(
-            student.student_id
-        );
-
-
-        const overlay =
-            getElement(
-                "profileOverlay"
+            throw new Error(
+                "Student data not found."
             );
-
-
-        if (overlay) {
-
-            overlay.classList.remove(
-                "hidden"
-            );
-
-        } else {
-
-            const profile =
-                getElement(
-                    "profile"
-                );
-
-
-            if (profile) {
-
-                profile.classList.remove(
-                    "hidden"
-                );
-
-
-                profile.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start"
-                });
-
-            }
 
         }
+
+
+        activeStudentForNotes =
+            activeStudent;
+
+
+        renderStudentProfile(
+            activeStudent
+        );
+
+
+        showElement(
+            getElement(
+                "profileOverlay"
+            )
+        );
+
+
+        /*
+         * Faculty cannot use the student-only
+         * intervention endpoint.
+         *
+         * We already load all interventions using
+         * /api/interventions.
+         *
+         * Filter those interventions for this student.
+         */
+
+        renderActiveStudentInterventions(
+            studentId
+        );
+
+
+        renderActiveStudentReports(
+            studentId
+        );
 
 
     } catch (error) {
@@ -1564,7 +1533,7 @@ async function loadStudentProfile(
 
 
         alert(
-            "Unable to load student profile."
+            `Unable to load student profile: ${error.message}`
         );
 
     }
@@ -1572,551 +1541,897 @@ async function loadStudentProfile(
 }
 
 
-// ============================================================
-// FILL STUDENT PROFILE
-// ============================================================
+function closeStudentProfile() {
 
-function fillStudentProfile(
-    student
-) {
-
-    if (
-        getElement("profileName")
-    ) {
-
+    hideElement(
         getElement(
-            "profileName"
-        ).textContent =
-            student.name ||
-            "Student";
-
-    }
-
-
-    if (
-        getElement("profileId")
-    ) {
-
-        getElement(
-            "profileId"
-        ).textContent =
-            `${student.student_id || ""} • ` +
-            `${student.department || ""} • ` +
-            `Year ${student.year || "-"}`;
-
-    }
-
-
-    const profileRisk =
-        getElement(
-            "profileRisk"
-        );
-
-
-    if (profileRisk) {
-
-        profileRisk.textContent =
-            student.risk_level ||
-            "Unknown";
-
-
-        profileRisk.className =
-            "risk-badge " +
-            getRiskClass(
-                student.risk_level
-            );
-
-    }
-
-
-    if (
-        getElement("profileScore")
-    ) {
-
-        getElement(
-            "profileScore"
-        ).textContent =
-            safeNumber(
-                student.success_score
-            ).toFixed(1);
-
-    }
-
-
-    if (
-        getElement("profileSegment")
-    ) {
-
-        getElement(
-            "profileSegment"
-        ).textContent =
-            student.segment ||
-            "-";
-
-    }
-
-
-    if (
-        getElement("profilePlacement")
-    ) {
-
-        getElement(
-            "profilePlacement"
-        ).textContent =
-            student.placement_outcome ||
-            "-";
-
-    }
-
-
-    displayRecommendation(
-        student.recommendation
+            "profileOverlay"
+        )
     );
 
 
-    // --------------------------------------------------------
-    // RISK REASONS
-    // --------------------------------------------------------
+    activeStudent =
+        null;
 
-    const riskReasons =
+
+    activeStudentForNotes =
+        null;
+
+}
+
+
+function renderStudentProfile(
+    student
+) {
+
+    const id =
+        student.student_id ||
+        student.id ||
+        "-";
+
+
+    const name =
+        student.name ||
+        student.student_name ||
+        "Student";
+
+
+    setText(
+        "profileName",
+        name
+    );
+
+
+    setText(
+        "profileId",
+        `${id} • ${student.department || "-"} • ${student.year || student.semester || "-"}`
+    );
+
+
+    setText(
+        "profileScore",
+        student.success_score ??
+        student.successScore ??
+        "-"
+    );
+
+
+    setText(
+        "profileTrendText",
+        student.performance_trend ||
+        student.trend ||
+        "-"
+    );
+
+
+    setText(
+        "profileSegment",
+        student.segment ||
+        student.ai_segment ||
+        "-"
+    );
+
+
+    setText(
+        "profilePlacement",
+        student.placement_readiness ||
+        student.placement ||
+        "-"
+    );
+
+
+    setText(
+        "profileCurrentCgpa",
+        student.cgpa ??
+        student.current_cgpa ??
+        "-"
+    );
+
+
+    setText(
+        "profilePrevCgpa",
+        student.previous_cgpa ??
+        student.prev_cgpa ??
+        "-"
+    );
+
+
+    const currentCgpa =
+        safeNumber(
+            student.cgpa ??
+            student.current_cgpa,
+            NaN
+        );
+
+
+    const previousCgpa =
+        safeNumber(
+            student.previous_cgpa ??
+            student.prev_cgpa,
+            NaN
+        );
+
+
+    if (
+        Number.isFinite(
+            currentCgpa
+        ) &&
+        Number.isFinite(
+            previousCgpa
+        )
+    ) {
+
+        const change =
+            currentCgpa -
+            previousCgpa;
+
+
+        setText(
+            "profileCgpaChange",
+            `${change >= 0 ? "+" : ""}${change.toFixed(2)}`
+        );
+
+    } else {
+
+        setText(
+            "profileCgpaChange",
+            "-"
+        );
+
+    }
+
+
+    setText(
+        "profileBacklogs",
+        student.backlogs ??
+        student.active_backlogs ??
+        0
+    );
+
+
+    const attendance =
+        safeNumber(
+            student.attendance,
+            0
+        );
+
+
+    setText(
+        "profileAttendanceValue",
+        `${attendance}%`
+    );
+
+
+    const attendanceBar =
+        getElement(
+            "profileAttendanceBar"
+        );
+
+
+    if (attendanceBar) {
+
+        attendanceBar.style.width =
+            `${Math.max(
+                0,
+                Math.min(
+                    100,
+                    attendance
+                )
+            )}%`;
+
+    }
+
+
+    const lms =
+        safeNumber(
+            student.lms_login,
+            0
+        );
+
+
+    setText(
+        "profileLmsLoginValue",
+        `${lms}`
+    );
+
+
+    const lmsBar =
+        getElement(
+            "profileLmsLoginBar"
+        );
+
+
+    if (lmsBar) {
+
+        lmsBar.style.width =
+            `${Math.max(
+                0,
+                Math.min(
+                    100,
+                    lms
+                )
+            )}%`;
+
+    }
+
+
+    const assignment =
+        safeNumber(
+            student.assignment_completion,
+            0
+        );
+
+
+    setText(
+        "profileAssignmentValue",
+        `${assignment}%`
+    );
+
+
+    const assignmentBar =
+        getElement(
+            "profileAssignmentBar"
+        );
+
+
+    if (assignmentBar) {
+
+        assignmentBar.style.width =
+            `${Math.max(
+                0,
+                Math.min(
+                    100,
+                    assignment
+                )
+            )}%`;
+
+    }
+
+
+    setText(
+        "profileRisk",
+        student.risk_level ||
+        student.risk ||
+        "-"
+    );
+
+
+    setText(
+        "profilePriorityTier",
+        student.priority ||
+        student.priority_tier ||
+        "-"
+    );
+
+
+    setText(
+        "profileMlRisk",
+        student.ml_risk ||
+        student.mlRisk ||
+        "Low Risk"
+    );
+
+
+    const mlProbability =
+        student.ml_probability ??
+        student.ml_prob ??
+        student.risk_probability;
+
+
+    setText(
+        "profileMlProb",
+        mlProbability !== undefined
+            ? `${Number(
+                mlProbability
+            ).toFixed(1)}%`
+            : "0%"
+    );
+
+
+    renderProfileTrend(
+        student
+    );
+
+
+    renderProfileSubjects(
+        student
+    );
+
+
+    renderRiskReasons(
+        student
+    );
+
+
+    renderAiExplanation(
+        student
+    );
+
+
+    renderRecommendations(
+        student
+    );
+
+
+    renderStrengths(
+        student
+    );
+
+}
+
+
+function renderProfileTrend(
+    student
+) {
+
+    const trend =
+        student.performance_trend ||
+        student.trend ||
+        "Stable";
+
+
+    const trendBanner =
+        getElement(
+            "profileTrendBanner"
+        );
+
+
+    if (trendBanner) {
+
+        trendBanner.innerHTML = `
+            <strong>
+                ${escapeHtml(
+                    trend
+                )}
+            </strong>
+
+            <span>
+                ${
+                    trend
+                        .toLowerCase()
+                        .includes("declin")
+                        ? "AI detected a negative academic trajectory."
+                        : trend
+                            .toLowerCase()
+                            .includes("improv")
+                            ? "Student is showing positive progress."
+                            : "Student performance is relatively stable."
+                }
+            </span>
+        `;
+
+    }
+
+
+    const timeline =
+        getElement(
+            "semesterTimelineChart"
+        );
+
+
+    if (!timeline) {
+        return;
+    }
+
+
+    const semesters =
+        student.semester_history ||
+        student.semesters ||
+        student.performance_history ||
+        [];
+
+
+    if (
+        !Array.isArray(
+            semesters
+        ) ||
+        !semesters.length
+    ) {
+
+        timeline.innerHTML = `
+            <div class="empty-state">
+                Semester history is not available.
+            </div>
+        `;
+
+        return;
+    }
+
+
+    timeline.innerHTML =
+        semesters.map(
+            (
+                semester,
+                index
+            ) => {
+
+                const label =
+                    semester.semester ||
+                    semester.name ||
+                    `Sem ${index + 1}`;
+
+
+                const score =
+                    semester.cgpa ??
+                    semester.score ??
+                    "-";
+
+
+                return `
+                    <div class="timeline-point">
+
+                        <span>
+                            ${escapeHtml(
+                                label
+                            )}
+                        </span>
+
+                        <strong>
+                            ${escapeHtml(
+                                score
+                            )}
+                        </strong>
+
+                    </div>
+                `;
+
+            }
+        ).join("");
+
+}
+
+
+function renderProfileSubjects(
+    student
+) {
+
+    const tbody =
+        getElement(
+            "profileSubjectTableBody"
+        );
+
+
+    if (!tbody) {
+        return;
+    }
+
+
+    const subjects =
+        student.subjects ||
+        student.subject_performance ||
+        student.subjects_performance ||
+        [];
+
+
+    if (
+        !Array.isArray(
+            subjects
+        ) ||
+        !subjects.length
+    ) {
+
+        tbody.innerHTML = `
+            <tr>
+
+                <td colspan="7">
+                    No subject-wise data available.
+                </td>
+
+            </tr>
+        `;
+
+        return;
+    }
+
+
+    tbody.innerHTML =
+        subjects.map(
+            subject => {
+
+                const score =
+                    subject.score ??
+                    subject.marks ??
+                    subject.performance ??
+                    "-";
+
+
+                const status =
+                    subject.status ||
+                    (
+                        safeNumber(
+                            score
+                        ) < 50
+                            ? "Needs Support"
+                            : "On Track"
+                    );
+
+
+                return `
+                    <tr>
+
+                        <td>
+                            ${escapeHtml(
+                                subject.code ||
+                                subject.subject_code ||
+                                "-"
+                            )}
+                        </td>
+
+
+                        <td>
+                            ${escapeHtml(
+                                subject.name ||
+                                subject.subject_name ||
+                                "-"
+                            )}
+                        </td>
+
+
+                        <td>
+                            ${escapeHtml(
+                                subject.credits ??
+                                "-"
+                            )}
+                        </td>
+
+
+                        <td>
+                            ${escapeHtml(
+                                score
+                            )}
+                        </td>
+
+
+                        <td>
+                            ${escapeHtml(
+                                subject.grade ||
+                                "-"
+                            )}
+                        </td>
+
+
+                        <td>
+                            ${escapeHtml(
+                                status
+                            )}
+                        </td>
+
+
+                        <td>
+                            ${escapeHtml(
+                                subject.decline_factor ||
+                                subject.declineFactor ||
+                                "-"
+                            )}
+                        </td>
+
+                    </tr>
+                `;
+
+            }
+        ).join("");
+
+}
+
+
+function renderRiskReasons(
+    student
+) {
+
+    const list =
         getElement(
             "riskReasons"
         );
 
 
-    if (riskReasons) {
-
-        riskReasons.innerHTML =
-            "";
-
-
-        const reasons =
-            Array.isArray(
-                student.risk_reasons
-            )
-                ? student.risk_reasons
-                : [];
-
-
-        const validReasons =
-            reasons.filter(
-                reason =>
-                    reason &&
-                    String(
-                        reason
-                    ).trim() !== ""
-            );
-
-
-        if (!validReasons.length) {
-
-            riskReasons.innerHTML =
-                "<li>No major risk factors detected.</li>";
-
-        } else {
-
-            validReasons.forEach(
-                reason => {
-
-                    const li =
-                        document.createElement(
-                            "li"
-                        );
-
-
-                    li.textContent =
-                        reason;
-
-
-                    riskReasons.appendChild(
-                        li
-                    );
-
-                }
-            );
-
-        }
-
-    }
-
-
-    // --------------------------------------------------------
-    // SCORE EXPLANATION
-    // --------------------------------------------------------
-
-    const explanation =
-        getElement(
-            "scoreExplanation"
-        );
-
-
-    if (explanation) {
-
-        explanation.innerHTML =
-            "";
-
-
-        const explanationData =
-            Array.isArray(
-                student.score_explanation
-            )
-                ? student.score_explanation
-                : [];
-
-
-        explanationData.forEach(
-            item => {
-
-                const div =
-                    document.createElement(
-                        "div"
-                    );
-
-
-                div.className =
-                    "explanation-item";
-
-
-                div.innerHTML = `
-
-                    <div>
-
-                        <strong>
-                            ${escapeHtml(
-                                item.indicator
-                            )}
-                        </strong>
-
-                        <br>
-
-                        <span>
-                            Value:
-                            ${safeNumber(
-                                item.value
-                            ).toFixed(1)}
-                        </span>
-
-                    </div>
-
-                    <span class="importance">
-                        ${escapeHtml(
-                            item.importance
-                        )}
-                    </span>
-
-                `;
-
-
-                explanation.appendChild(
-                    div
-                );
-
-            }
-        );
-
-    }
-
-
-    // --------------------------------------------------------
-    // ACADEMIC
-    // --------------------------------------------------------
-
-    const academic =
-        getElement(
-            "academic"
-        );
-
-
-    if (academic) {
-
-        const academicData =
-            student.academic ||
-            {};
-
-
-        const lms =
-            student.lms ||
-            {};
-
-
-        academic.innerHTML = `
-
-            <strong>CGPA:</strong>
-            ${safeNumber(
-                academicData.cgpa
-            ).toFixed(2)}
-
-            <br>
-
-            <strong>Backlogs:</strong>
-            ${safeNumber(
-                academicData.backlogs
-            )}
-
-            <br>
-
-            <strong>Subject Performance:</strong>
-            ${safeNumber(
-                academicData.subject_performance
-            ).toFixed(1)}%
-
-            <br><br>
-
-            <strong>Attendance:</strong>
-            ${safeNumber(
-                student.attendance
-            ).toFixed(1)}%
-
-            <br>
-
-            <strong>LMS Login Frequency:</strong>
-            ${safeNumber(
-                lms.login_frequency
-            ).toFixed(1)}
-
-            <br>
-
-            <strong>Assignment Completion:</strong>
-            ${safeNumber(
-                lms.assignment_completion
-            ).toFixed(1)}%
-
-        `;
-
-    }
-
-
-    // --------------------------------------------------------
-    // PLACEMENT
-    // --------------------------------------------------------
-
-    const placement =
-        getElement(
-            "placement"
-        );
-
-
-    if (placement) {
-
-        const placementData =
-            student.placement ||
-            {};
-
-
-        const skills =
-            student.skills ||
-            {};
-
-
-        placement.innerHTML = `
-
-            <strong>Outcome:</strong>
-            ${escapeHtml(
-                student.placement_outcome
-            )}
-
-            <br><br>
-
-            <strong>Aptitude:</strong>
-            ${safeNumber(
-                placementData.aptitude
-            ).toFixed(1)}%
-
-            <br>
-
-            <strong>Coding:</strong>
-            ${safeNumber(
-                placementData.coding
-            ).toFixed(1)}%
-
-            <br>
-
-            <strong>Mock Interview:</strong>
-            ${safeNumber(
-                placementData.mock_interview
-            ).toFixed(1)}%
-
-            <br><br>
-
-            <strong>Technical Skill:</strong>
-            ${safeNumber(
-                skills.technical
-            ).toFixed(1)}%
-
-            <br>
-
-            <strong>Soft Skill:</strong>
-            ${safeNumber(
-                skills.soft
-            ).toFixed(1)}%
-
-        `;
-
-    }
-
-
-    // --------------------------------------------------------
-    // ENGAGEMENT
-    // --------------------------------------------------------
-
-    const engagement =
-        getElement(
-            "engagement"
-        );
-
-
-    if (engagement) {
-
-        const engagementData =
-            student.engagement ||
-            {};
-
-
-        const feedback =
-            student.feedback ||
-            {};
-
-
-        engagement.innerHTML = `
-
-            <strong>Events:</strong>
-            ${safeNumber(
-                engagementData.events
-            )}
-
-            <br>
-
-            <strong>Clubs:</strong>
-            ${safeNumber(
-                engagementData.clubs
-            )}
-
-            <br>
-
-            <strong>Hackathons:</strong>
-            ${safeNumber(
-                engagementData.hackathons
-            )}
-
-            <br>
-
-            <strong>Certifications:</strong>
-            ${safeNumber(
-                engagementData.certifications
-            )}
-
-            <br><br>
-
-            <strong>Student Satisfaction:</strong>
-            ${safeNumber(
-                feedback.student_satisfaction
-            ).toFixed(1)}%
-
-            <br>
-
-            <strong>Faculty Feedback:</strong>
-            ${safeNumber(
-                feedback.faculty_feedback
-            ).toFixed(1)}%
-
-        `;
-
-    }
-
-}
-
-
-// ============================================================
-// FACULTY NOTES
-// ============================================================
-
-async function loadFacultyNotes(
-    studentId
-) {
-
-    const notesContainer =
-        getElement(
-            "facultyNotes"
-        );
-
-
-    if (!notesContainer) {
+    if (!list) {
         return;
     }
 
 
-    activeStudentForNotes =
-        studentId;
+    const reasons =
+        student.risk_reasons ||
+        student.risk_factors ||
+        student.riskReasons ||
+        [];
 
 
-    try {
+    if (
+        !Array.isArray(
+            reasons
+        ) ||
+        !reasons.length
+    ) {
 
-        const response =
-            await apiFetch(
-                "/api/student/" +
-                encodeURIComponent(
-                    studentId
-                ) +
-                "/notes"
-            );
-
-
-        const data =
-            await response.json();
-
-
-        setupFacultyAttachmentControls();
-
-
-        renderFacultyNotes(
-            data.notes || []
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "Faculty notes error:",
-            error
-        );
-
-
-        notesContainer.innerHTML = `
-            <p style="color:#dc2626;">
-                Unable to load faculty notes.
-            </p>
+        list.innerHTML = `
+            <li>
+                No major risk triggers detected.
+            </li>
         `;
 
+        return;
     }
+
+
+    list.innerHTML =
+        reasons.map(
+            reason => `
+                <li>
+                    ${escapeHtml(
+                        typeof reason ===
+                        "string"
+                            ? reason
+                            : reason.reason ||
+                              reason.description ||
+                              JSON.stringify(
+                                  reason
+                              )
+                    )}
+                </li>
+            `
+        ).join("");
 
 }
 
 
-// ============================================================
-// CREATE ATTACHMENT CONTROLS
-// ============================================================
+function renderAiExplanation(
+    student
+) {
 
-function setupFacultyAttachmentControls() {
+    setText(
+        "profileAiExplanationText",
+        student.ai_explanation ||
+        student.ai_explanation_text ||
+        student.explanation ||
+        student.risk_explanation ||
+        "AI analysis is not available for this student."
+    );
 
-    const notesContainer =
+
+    const factors =
+        student.contributing_factors ||
+        student.root_causes ||
+        student.factors ||
+        [];
+
+
+    const container =
         getElement(
-            "facultyNotes"
+            "profileContributingFactors"
         );
 
 
-    if (!notesContainer) {
+    if (!container) {
         return;
     }
 
 
     if (
+        !Array.isArray(
+            factors
+        ) ||
+        !factors.length
+    ) {
+
+        container.innerHTML = `
+            <span class="factor-badge">
+                No major root cause identified
+            </span>
+        `;
+
+        return;
+    }
+
+
+    container.innerHTML =
+        factors.map(
+            factor => `
+                <span class="factor-badge">
+                    ${escapeHtml(
+                        typeof factor ===
+                        "string"
+                            ? factor
+                            : factor.name ||
+                              factor.factor ||
+                              factor.description ||
+                              ""
+                    )}
+                </span>
+            `
+        ).join("");
+
+}
+
+
+function renderRecommendations(
+    student
+) {
+
+    setText(
+        "overallRecommendation",
+        student.overall_recommendation ||
+        student.recommendation ||
+        "Continue monitoring academic progress and engagement."
+    );
+
+
+    setText(
+        "recommendationPriority",
+        student.priority ||
+        student.priority_tier ||
+        "Monitor"
+    );
+
+
+    const actions =
+        student.recommended_actions ||
+        student.actions ||
+        student.interventions_recommended ||
+        [];
+
+
+    const list =
         getElement(
-            "facultyAttachmentInput"
+            "recommendedActions"
+        );
+
+
+    if (!list) {
+        return;
+    }
+
+
+    if (
+        !Array.isArray(
+            actions
+        ) ||
+        !actions.length
+    ) {
+
+        list.innerHTML = `
+            <li>
+                Continue regular academic monitoring.
+            </li>
+        `;
+
+        return;
+    }
+
+
+    list.innerHTML =
+        actions.map(
+            action => `
+                <li>
+                    ${escapeHtml(
+                        typeof action ===
+                        "string"
+                            ? action
+                            : action.action ||
+                              action.description ||
+                              ""
+                    )}
+                </li>
+            `
+        ).join("");
+
+}
+
+
+function renderStrengths(
+    student
+) {
+
+    const strengths =
+        student.strengths ||
+        student.student_strengths ||
+        [];
+
+
+    const list =
+        getElement(
+            "studentStrengths"
+        );
+
+
+    if (!list) {
+        return;
+    }
+
+
+    if (
+        !Array.isArray(
+            strengths
+        ) ||
+        !strengths.length
+    ) {
+
+        list.innerHTML = `
+            <li>
+                Strength analysis is not available.
+            </li>
+        `;
+
+        return;
+    }
+
+
+    list.innerHTML =
+        strengths.map(
+            strength => `
+                <li>
+                    ${escapeHtml(
+                        typeof strength ===
+                        "string"
+                            ? strength
+                            : strength.name ||
+                              strength.description ||
+                              ""
+                    )}
+                </li>
+            `
+        ).join("");
+
+}
+
+
+/* =========================================================
+   GLOBAL FACULTY NOTES
+========================================================= */
+
+/*
+   GLOBAL FACULTY NOTES
+
+   These notes are NOT connected to a Student ID.
+
+   Every student can see them.
+
+   Every note contains:
+
+   - Faculty name
+   - Subject
+   - Note
+   - Optional PDF/DOCX resource
+   - Upload date
+*/
+
+
+function setupFacultySubjectField() {
+
+    const form =
+        getElement(
+            "facultyNoteForm"
+        );
+
+
+    if (!form) {
+        return;
+    }
+
+
+    /*
+     * If the user later adds the field manually
+     * to index.html, this function does nothing.
+     */
+
+    if (
+        getElement(
+            "facultySubject"
         )
     ) {
 
         return;
 
+    }
+
+
+    const textarea =
+        getElement(
+            "facultyNote"
+        );
+
+
+    if (!textarea) {
+        return;
     }
 
 
@@ -2126,94 +2441,134 @@ function setupFacultyAttachmentControls() {
         );
 
 
-    wrapper.id =
-        "facultyAttachmentControls";
+    wrapper.className =
+        "faculty-subject-wrapper";
 
 
     wrapper.style.marginBottom =
-        "15px";
-
-
-    wrapper.style.padding =
         "12px";
-
-
-    wrapper.style.border =
-        "1px solid #e5e7eb";
-
-
-    wrapper.style.borderRadius =
-        "8px";
 
 
     wrapper.innerHTML = `
 
-        <div
-            style="
-                font-weight:600;
-                margin-bottom:8px;
-            "
-        >
-            Attach Faculty Document
-        </div>
-
-        <input
-            type="file"
-            id="facultyAttachmentInput"
-            accept=".pdf,.docx"
-            style="
-                width:100%;
-                margin-bottom:8px;
-            "
-        >
-
-        <small
+        <label
+            for="facultySubject"
             style="
                 display:block;
-                color:#64748b;
-                margin-bottom:8px;
+                margin-bottom:6px;
+                font-weight:600;
             "
         >
-            Optional PDF or DOCX file. Maximum size: 10 MB.
-        </small>
+            Subject
+        </label>
 
-        <button
-            type="button"
-            id="facultyUploadButton"
-            class="outline-button"
+        <input
+            type="text"
+            id="facultySubject"
+            name="faculty_subject"
+            placeholder="e.g. DBMS, Computer Networks, DSA"
+            autocomplete="off"
+            style="
+                width:100%;
+                padding:10px 12px;
+                border-radius:8px;
+                border:1px solid #d1d5db;
+                font:inherit;
+                box-sizing:border-box;
+            "
         >
-            Add Note & Attachment
-        </button>
 
     `;
 
 
-    notesContainer.prepend(
-        wrapper
+    textarea.parentNode.insertBefore(
+        wrapper,
+        textarea
     );
 
+}
 
-    const uploadButton =
+
+async function loadFacultyNotes() {
+
+    const container =
         getElement(
-            "facultyUploadButton"
+            "facultyNotes"
         );
 
 
-    if (uploadButton) {
+    if (!container) {
+        return;
+    }
 
-        uploadButton.addEventListener(
-            "click",
-            addFacultyNote
+
+    try {
+
+        const data =
+            await apiRequest(
+                "/api/faculty-notes",
+                {
+                    method: "GET"
+                }
+            );
+
+
+        globalFacultyNotes =
+            data?.notes ||
+            data?.faculty_notes ||
+            data?.data ||
+            data ||
+            [];
+
+
+        if (
+            !Array.isArray(
+                globalFacultyNotes
+            )
+        ) {
+
+            globalFacultyNotes =
+                [];
+
+        }
+
+
+        renderFacultyNotes(
+            globalFacultyNotes
         );
+
+    } catch (error) {
+
+        console.error(
+            "Could not load faculty notes:",
+            error
+        );
+
+
+        container.innerHTML = `
+            <div class="faculty-notes-empty">
+
+                <div class="faculty-notes-empty-icon">
+                    ⚠️
+                </div>
+
+                <strong>
+                    Unable to load faculty notes
+                </strong>
+
+                <p>
+                    ${escapeHtml(
+                        error.message
+                    )}
+                </p>
+
+            </div>
+        `;
 
     }
 
 }
 
-
-// ============================================================
-// RENDER FACULTY NOTES
-// ============================================================
 
 function renderFacultyNotes(
     notes
@@ -2230,35 +2585,6 @@ function renderFacultyNotes(
     }
 
 
-    let notesList =
-        getElement(
-            "facultyNotesList"
-        );
-
-
-    if (!notesList) {
-
-        notesList =
-            document.createElement(
-                "div"
-            );
-
-
-        notesList.id =
-            "facultyNotesList";
-
-
-        container.appendChild(
-            notesList
-        );
-
-    }
-
-
-    notesList.innerHTML =
-        "";
-
-
     if (
         !Array.isArray(
             notes
@@ -2266,176 +2592,239 @@ function renderFacultyNotes(
         !notes.length
     ) {
 
-        notesList.innerHTML = `
-            <p style="color:#64748b;">
-                No faculty notes have been added yet.
-            </p>
+        container.innerHTML = `
+            <div class="faculty-notes-empty">
+
+                <div class="faculty-notes-empty-icon">
+                    📝
+                </div>
+
+                <strong>
+                    No faculty notes yet
+                </strong>
+
+                <p>
+                    Add a faculty observation,
+                    subject note or supporting document.
+                </p>
+
+            </div>
         `;
 
         return;
-
     }
 
 
-    notes.forEach(
-        note => {
+    container.innerHTML =
+        notes.map(
+            note => {
 
-            const div =
-                document.createElement(
-                    "div"
-                );
-
-
-            div.className =
-                "faculty-note";
+                const facultyName =
+                    note.faculty_name ||
+                    note.facultyName ||
+                    "Faculty";
 
 
-            const date =
-                note.created_at
-                    ? new Date(
-                        note.created_at
-                    ).toLocaleString()
-                    : "";
+                const subject =
+                    note.subject ||
+                    note.subject_name ||
+                    "General";
 
 
-            let attachmentHtml =
-                "";
+                const noteText =
+                    note.note ||
+                    note.description ||
+                    "";
 
 
-            if (
-                note.attachment_url
-            ) {
-
-                const attachmentName =
-                    note.attachment_name ||
-                    note.original_filename ||
-                    "Attached document";
+                const createdAt =
+                    note.created_at ||
+                    note.createdAt;
 
 
-                attachmentHtml = `
+                const attachment =
+                    note.attachment ||
+                    null;
 
-                    <p
-                        style="
-                            margin-top:8px;
-                        "
+
+                let attachmentHtml =
+                    "";
+
+
+                if (attachment) {
+
+                    const attachmentUrl =
+                        attachment.url ||
+                        attachment.attachment_url ||
+                        note.attachment_url;
+
+
+                    const originalFilename =
+                        attachment.original_filename ||
+                        attachment.filename ||
+                        note.attachment_filename ||
+                        "Faculty Document";
+
+
+                    if (attachmentUrl) {
+
+                        attachmentHtml = `
+                            <div class="faculty-note-attachment">
+
+                                <span>
+                                    📎
+                                </span>
+
+                                <a
+                                    href="${escapeHtml(
+                                        attachmentUrl
+                                    )}"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    ${escapeHtml(
+                                        originalFilename
+                                    )}
+                                </a>
+
+                            </div>
+                        `;
+
+                    }
+
+                } else if (
+                    note.attachment_url
+                ) {
+
+                    attachmentHtml = `
+                        <div class="faculty-note-attachment">
+
+                            <span>
+                                📎
+                            </span>
+
+                            <a
+                                href="${escapeHtml(
+                                    note.attachment_url
+                                )}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                ${
+                                    escapeHtml(
+                                        note.attachment_filename ||
+                                        "Faculty Document"
+                                    )
+                                }
+                            </a>
+
+                        </div>
+                    `;
+
+                }
+
+
+                return `
+                    <article
+                        class="faculty-note-item"
                     >
 
-                        📎
+                        <div
+                            class="faculty-note-header"
+                        >
 
-                        <a
-                            href="${escapeHtml(
-                                note.attachment_url
-                            )}"
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            <div>
+
+                                <strong>
+                                    ${escapeHtml(
+                                        facultyName
+                                    )}
+                                </strong>
+
+                                <div
+                                    class="faculty-note-meta"
+                                >
+
+                                    <span>
+                                        👨‍🏫 Uploaded by:
+                                        ${escapeHtml(
+                                            facultyName
+                                        )}
+                                    </span>
+
+                                    <span>
+                                        📚 Subject:
+                                        ${escapeHtml(
+                                            subject
+                                        )}
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+                            <small>
+                                ${escapeHtml(
+                                    formatDateTime(
+                                        createdAt
+                                    )
+                                )}
+                            </small>
+
+                        </div>
+
+
+                        <div
+                            class="faculty-note-subject-badge"
+                        >
+                            📚 Subject:
+                            ${escapeHtml(
+                                subject
+                            )}
+                        </div>
+
+
+                        <p
+                            class="faculty-note-text"
                         >
                             ${escapeHtml(
-                                attachmentName
+                                noteText
                             )}
-                        </a>
+                        </p>
 
-                    </p>
 
+                        ${attachmentHtml}
+
+                    </article>
                 `;
 
             }
-
-
-            div.innerHTML = `
-
-                <div>
-
-                    <strong>
-                        ${escapeHtml(
-                            note.faculty_name
-                        )}
-                    </strong>
-
-                    <small>
-                        ${escapeHtml(
-                            date
-                        )}
-                    </small>
-
-                </div>
-
-                <p>
-                    ${escapeHtml(
-                        note.note
-                    )}
-                </p>
-
-                ${attachmentHtml}
-
-                <button
-                    type="button"
-                    class="delete-note-button"
-                >
-                    Delete
-                </button>
-
-            `;
-
-
-            const deleteButton =
-                div.querySelector(
-                    ".delete-note-button"
-                );
-
-
-            if (deleteButton) {
-
-                deleteButton.addEventListener(
-                    "click",
-                    () => {
-
-                        deleteFacultyNote(
-                            note.student_id,
-                            note.id
-                        );
-
-                    }
-                );
-
-            }
-
-
-            notesList.appendChild(
-                div
-            );
-
-        }
-    );
+        ).join("");
 
 }
 
 
-// ============================================================
-// ADD FACULTY NOTE + OPTIONAL FILE
-// ============================================================
+/* =========================================================
+   ADD GLOBAL FACULTY NOTE
+========================================================= */
 
 async function addFacultyNote() {
 
-    if (!activeStudentForNotes) {
-
-        alert(
-            "Please select a student first."
-        );
-
-        return;
-
-    }
-
-
-    const noteInput =
+    const facultyNameInput =
         getElement(
-            "facultyNoteInput"
+            "facultyName"
         );
 
 
-    const facultyInput =
+    const facultyNoteInput =
         getElement(
-            "facultyNameInput"
+            "facultyNote"
+        );
+
+
+    const subjectInput =
+        getElement(
+            "facultySubject"
         );
 
 
@@ -2445,90 +2834,112 @@ async function addFacultyNote() {
         );
 
 
-    if (!noteInput) {
-
-        alert(
-            "Faculty note input is not available."
-        );
-
-        return;
-
-    }
+    const facultyName =
+        facultyNameInput
+            ?.value
+            .trim() ||
+        "";
 
 
     const note =
-        noteInput.value.trim();
+        facultyNoteInput
+            ?.value
+            .trim() ||
+        "";
 
 
-    const facultyName =
-        facultyInput
-            ? facultyInput.value.trim()
-            : "Faculty";
+    const subject =
+        subjectInput
+            ?.value
+            .trim() ||
+        "";
 
 
-    const file =
-        attachmentInput &&
-        attachmentInput.files &&
-        attachmentInput.files.length
-            ? attachmentInput.files[0]
-            : null;
+    const attachment =
+        attachmentInput
+            ?.files?.[0] ||
+        null;
 
 
-    if (!note) {
+    if (!facultyName) {
 
-        alert(
-            "Please write a note first."
+        showFacultyNotesStatus(
+            "Please enter the faculty name.",
+            "error"
         );
 
         return;
-
     }
 
 
-    if (file) {
+    if (!subject) {
 
-        const allowed =
-            [
-                ".pdf",
-                ".docx"
-            ];
+        showFacultyNotesStatus(
+            "Please enter the subject name.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    if (
+        !note &&
+        !attachment
+    ) {
+
+        showFacultyNotesStatus(
+            "Please enter a note or attach a document.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    if (attachment) {
+
+        const maxSize =
+            10 *
+            1024 *
+            1024;
+
+
+        if (
+            attachment.size >
+            maxSize
+        ) {
+
+            showFacultyNotesStatus(
+                "Attachment is larger than 10 MB.",
+                "error"
+            );
+
+            return;
+        }
 
 
         const fileName =
-            file.name.toLowerCase();
+            attachment.name.toLowerCase();
 
 
         const valid =
-            allowed.some(
-                extension =>
-                    fileName.endsWith(
-                        extension
-                    )
+            fileName.endsWith(
+                ".pdf"
+            ) ||
+            fileName.endsWith(
+                ".docx"
             );
 
 
         if (!valid) {
 
-            alert(
-                "Only PDF and DOCX files are allowed."
+            showFacultyNotesStatus(
+                "Only PDF and DOCX files are supported.",
+                "error"
             );
 
             return;
-
-        }
-
-
-        if (
-            file.size >
-            10 * 1024 * 1024
-        ) {
-
-            alert(
-                "The file is larger than 10 MB."
-            );
-
-            return;
-
         }
 
     }
@@ -2536,14 +2947,16 @@ async function addFacultyNote() {
 
     try {
 
+        showFacultyNotesStatus(
+            "Uploading faculty resource...",
+            "loading"
+        );
+
+
         let response;
 
 
-        // ----------------------------------------------------
-        // FILE UPLOAD
-        // ----------------------------------------------------
-
-        if (file) {
+        if (attachment) {
 
             const formData =
                 new FormData();
@@ -2551,8 +2964,13 @@ async function addFacultyNote() {
 
             formData.append(
                 "faculty_name",
-                facultyName ||
-                "Faculty"
+                facultyName
+            );
+
+
+            formData.append(
+                "subject",
+                subject
             );
 
 
@@ -2564,110 +2982,76 @@ async function addFacultyNote() {
 
             formData.append(
                 "attachment",
-                file
+                attachment
             );
 
 
             response =
-                await apiFetch(
-                    "/api/student/" +
-                    encodeURIComponent(
-                        activeStudentForNotes
-                    ) +
-                    "/notes/upload",
+                await apiRequest(
+                    "/api/faculty-notes/upload",
                     {
                         method: "POST",
                         body: formData
                     }
                 );
 
-        }
-
-
-        // ----------------------------------------------------
-        // NORMAL TEXT NOTE
-        // ----------------------------------------------------
-
-        else {
+        } else {
 
             response =
-                await apiFetch(
-                    "/api/student/" +
-                    encodeURIComponent(
-                        activeStudentForNotes
-                    ) +
-                    "/notes",
+                await apiRequest(
+                    "/api/faculty-notes",
                     {
-
-                        method:
-                            "POST",
-
-                        headers: {
-
-                            "Content-Type":
-                                "application/json"
-
-                        },
+                        method: "POST",
 
                         body:
                             JSON.stringify({
 
-                                student_id:
-                                    activeStudentForNotes,
-
                                 faculty_name:
-                                    facultyName ||
-                                    "Faculty",
+                                    facultyName,
+
+                                subject:
+                                    subject,
 
                                 note:
                                     note
 
                             })
-
                     }
                 );
 
         }
 
 
-        await response.json();
-
-
-        noteInput.value =
-            "";
-
-
-        if (attachmentInput) {
-
-            attachmentInput.value =
-                "";
-
-        }
-
-
-        await loadFacultyNotes(
-            activeStudentForNotes
+        console.log(
+            "Faculty note saved:",
+            response
         );
 
 
-        alert(
-            file
-                ? "Faculty note and document added successfully."
-                : "Faculty note added successfully."
+        showFacultyNotesStatus(
+            "Faculty note/resource uploaded successfully. It is now available to all students.",
+            "success"
         );
+
+
+        clearFacultyNoteForm();
+
+
+        await loadFacultyNotes();
 
 
     } catch (error) {
 
         console.error(
-            "Add note error:",
+            "Faculty note upload error:",
             error
         );
 
 
-        alert(
+        showFacultyNotesStatus(
             error.message ||
-            "Unable to add faculty note."
+            "Could not save faculty note.",
+            "error"
         );
 
     }
@@ -2675,60 +3059,1674 @@ async function addFacultyNote() {
 }
 
 
-// ============================================================
-// DELETE FACULTY NOTE
-// ============================================================
-
-async function deleteFacultyNote(
-    studentId,
-    noteId
+function showFacultyNotesStatus(
+    message,
+    type = "success"
 ) {
 
-    if (
-        !confirm(
-            "Delete this faculty note?"
+    const status =
+        getElement(
+            "facultyNotesStatus"
+        );
+
+
+    if (!status) {
+        return;
+    }
+
+
+    status.textContent =
+        message;
+
+
+    status.className =
+        `faculty-notes-status ${type}`;
+
+}
+
+
+function clearFacultyNoteForm() {
+
+    const name =
+        getElement(
+            "facultyName"
+        );
+
+
+    const subject =
+        getElement(
+            "facultySubject"
+        );
+
+
+    const note =
+        getElement(
+            "facultyNote"
+        );
+
+
+    const attachment =
+        getElement(
+            "facultyAttachmentInput"
+        );
+
+
+    if (name) {
+
+        /*
+         * Keep the logged-in faculty name
+         * instead of unnecessarily clearing it.
+         */
+
+        const displayName =
+            getElement(
+                "facultyDisplayName"
+            )?.textContent.trim();
+
+
+        if (displayName) {
+
+            name.value =
+                displayName;
+
+        } else {
+
+            name.value =
+                "";
+
+        }
+
+    }
+
+
+    if (subject) {
+        subject.value = "";
+    }
+
+
+    if (note) {
+        note.value = "";
+    }
+
+
+    if (attachment) {
+        attachment.value = "";
+    }
+
+}
+
+
+/* =========================================================
+   OLD STUDENT-SPECIFIC NOTES
+========================================================= */
+
+async function saveStudentSpecificNote() {
+
+    alert(
+        "Faculty Notes are global. Use the Faculty Notes & Documents section to upload a note or resource for all students."
+    );
+
+}
+
+
+async function loadStudentSpecificNotes() {
+
+    return [];
+
+}
+
+
+/* =========================================================
+   INTERVENTIONS
+========================================================= */
+
+async function loadFacultyInterventions() {
+
+    try {
+
+        const data =
+            await apiRequest(
+                "/api/interventions",
+                {
+                    method: "GET"
+                }
+            );
+
+
+        facultyInterventions =
+            data?.interventions ||
+            data?.data ||
+            data ||
+            [];
+
+
+        if (
+            !Array.isArray(
+                facultyInterventions
+            )
+        ) {
+
+            facultyInterventions =
+                [];
+
+        }
+
+
+        renderFacultyInterventions(
+            facultyInterventions
+        );
+
+
+        updateInterventionSummaryCards();
+
+
+    } catch (error) {
+
+        console.error(
+            "Could not load interventions:",
+            error
+        );
+
+    }
+
+}
+
+
+function updateInterventionSummaryCards() {
+
+    const pending =
+        facultyInterventions.filter(
+            item => {
+
+                const status =
+                    String(
+                        item.status ||
+                        ""
+                    ).toLowerCase();
+
+
+                return (
+                    status.includes("pending") ||
+                    status.includes("assigned") ||
+                    status.includes("in progress") ||
+                    status.includes("acknowledged")
+                );
+
+            }
+        ).length;
+
+
+    const completed =
+        facultyInterventions.filter(
+            item => {
+
+                const status =
+                    String(
+                        item.status ||
+                        ""
+                    ).toLowerCase();
+
+
+                return (
+                    status.includes("completed") ||
+                    status.includes("closed")
+                );
+
+            }
+        ).length;
+
+
+    setText(
+        "pendingInterventions",
+        pending
+    );
+
+
+    setText(
+        "completedInterventions",
+        completed
+    );
+
+}
+
+
+function renderFacultyInterventions(
+    interventions
+) {
+
+    const containers = [
+        "facultyInterventionsList"
+    ];
+
+
+    containers.forEach(
+        containerId => {
+
+            const container =
+                getElement(
+                    containerId
+                );
+
+
+            if (!container) {
+                return;
+            }
+
+
+            if (
+                !Array.isArray(
+                    interventions
+                ) ||
+                !interventions.length
+            ) {
+
+                container.innerHTML = `
+                    <div class="faculty-notes-empty">
+
+                        <div class="faculty-notes-empty-icon">
+                            🎯
+                        </div>
+
+                        <strong>
+                            No interventions yet
+                        </strong>
+
+                        <p>
+                            Student interventions will appear here.
+                        </p>
+
+                    </div>
+                `;
+
+                return;
+            }
+
+
+            container.innerHTML =
+                interventions
+                    .map(
+                        intervention =>
+                            renderInterventionCard(
+                                intervention
+                            )
+                    )
+                    .join("");
+
+        }
+    );
+
+}
+
+
+function renderInterventionCard(
+    intervention
+) {
+
+    const id =
+        intervention.intervention_id ||
+        intervention.id ||
+        "";
+
+
+    const studentId =
+        intervention.student_id ||
+        intervention.studentId ||
+        "-";
+
+
+    const title =
+        intervention.title ||
+        "Student Intervention";
+
+
+    const description =
+        intervention.description ||
+        intervention.message ||
+        "";
+
+
+    const status =
+        intervention.status ||
+        "Assigned";
+
+
+    const priority =
+        intervention.priority ||
+        "Medium";
+
+
+    const actionType =
+        intervention.action_type ||
+        intervention.actionType ||
+        "Academic Support";
+
+
+    const reason =
+        intervention.reason_category ||
+        intervention.reasonCategory ||
+        "";
+
+
+    const dueDate =
+        intervention.due_date ||
+        intervention.dueDate;
+
+
+    const feedback =
+        intervention.feedback ||
+        "";
+
+
+    const studentResponse =
+        intervention.student_response ||
+        intervention.response ||
+        "";
+
+
+    const progress =
+        intervention.progress ||
+        "";
+
+
+    return `
+        <article
+            class="intervention-card"
+        >
+
+            <div
+                class="intervention-card-header"
+            >
+
+                <div>
+
+                    <strong>
+                        ${escapeHtml(
+                            title
+                        )}
+                    </strong>
+
+                    <small>
+                        Student ID:
+                        ${escapeHtml(
+                            studentId
+                        )}
+                    </small>
+
+                </div>
+
+                <span
+                    class="priority-badge"
+                >
+                    ${escapeHtml(
+                        priority
+                    )}
+                </span>
+
+            </div>
+
+
+            <div
+                class="intervention-meta"
+            >
+
+                <span>
+                    🎯
+                    ${escapeHtml(
+                        actionType
+                    )}
+                </span>
+
+
+                ${
+                    reason
+                        ? `
+                            <span>
+                                🔎
+                                ${escapeHtml(
+                                    reason
+                                )}
+                            </span>
+                        `
+                        : ""
+                }
+
+
+                ${
+                    dueDate
+                        ? `
+                            <span>
+                                📅 Due
+                                ${escapeHtml(
+                                    formatDate(
+                                        dueDate
+                                    )
+                                )}
+                            </span>
+                        `
+                        : ""
+                }
+
+
+                <span>
+                    Status:
+                    ${escapeHtml(
+                        status
+                    )}
+                </span>
+
+            </div>
+
+
+            <p>
+                ${escapeHtml(
+                    description
+                )}
+            </p>
+
+
+            ${
+                studentResponse
+                    ? `
+                        <div
+                            class="intervention-feedback"
+                        >
+
+                            <strong>
+                                Student Response
+                            </strong>
+
+                            <p>
+                                ${escapeHtml(
+                                    studentResponse
+                                )}
+                            </p>
+
+                        </div>
+                    `
+                    : ""
+            }
+
+
+            ${
+                progress
+                    ? `
+                        <div
+                            class="intervention-feedback"
+                        >
+
+                            <strong>
+                                Student Progress
+                            </strong>
+
+                            <p>
+                                ${escapeHtml(
+                                    progress
+                                )}
+                            </p>
+
+                        </div>
+                    `
+                    : ""
+            }
+
+
+            ${
+                feedback
+                    ? `
+                        <div
+                            class="intervention-feedback"
+                        >
+
+                            <strong>
+                                Faculty Feedback
+                            </strong>
+
+                            <p>
+                                ${escapeHtml(
+                                    feedback
+                                )}
+                            </p>
+
+                        </div>
+                    `
+                    : ""
+            }
+
+
+            <div
+                class="intervention-actions"
+            >
+
+                ${
+                    id
+                        ? `
+                            <button
+                                type="button"
+                                class="outline-button"
+                                onclick="openFacultyReviewModal('${escapeHtml(id)}')"
+                            >
+                                Review Response
+                            </button>
+                        `
+                        : ""
+                }
+
+            </div>
+
+        </article>
+    `;
+
+}
+
+
+/* =========================================================
+   CREATE INTERVENTION
+========================================================= */
+
+function openFacultyInterventionModal() {
+
+    const modal =
+        getElement(
+            "facultyInterventionModal"
+        );
+
+
+    if (!modal) {
+        return;
+    }
+
+
+    const student =
+        activeStudent;
+
+
+    if (!student) {
+
+        alert(
+            "Please open a student profile first, then create an intervention."
+        );
+
+        return;
+    }
+
+
+    const studentId =
+        student.student_id ||
+        student.id ||
+        "-";
+
+
+    const name =
+        student.name ||
+        student.student_name ||
+        "Student";
+
+
+    const banner =
+        getElement(
+            "interventionStudentBanner"
+        );
+
+
+    if (banner) {
+
+        banner.innerHTML = `
+            <strong>
+                🎯
+                ${escapeHtml(
+                    name
+                )}
+            </strong>
+
+            <span>
+                Student ID:
+                ${escapeHtml(
+                    studentId
+                )}
+            </span>
+
+            <span>
+                ${escapeHtml(
+                    student.department ||
+                    "-"
+                )}
+            </span>
+        `;
+
+    }
+
+
+    const form =
+        getElement(
+            "facultyInterventionForm"
+        );
+
+
+    if (form) {
+        form.reset();
+    }
+
+
+    setTodayAsMinimumDate();
+
+
+    showElement(
+        modal
+    );
+
+}
+
+
+function closeFacultyInterventionModal() {
+
+    hideElement(
+        getElement(
+            "facultyInterventionModal"
         )
+    );
+
+}
+
+
+async function submitFacultyIntervention(
+    event
+) {
+
+    event.preventDefault();
+
+
+    if (!activeStudent) {
+
+        alert(
+            "Please select a student first."
+        );
+
+        return;
+    }
+
+
+    const studentId =
+        activeStudent.student_id ||
+        activeStudent.id;
+
+
+    const actionType =
+        getElement(
+            "interventionActionType"
+        )?.value ||
+        "";
+
+
+    const reasonCategory =
+        getElement(
+            "interventionReasonCategory"
+        )?.value ||
+        "";
+
+
+    const priority =
+        getElement(
+            "interventionPriority"
+        )?.value ||
+        "Medium";
+
+
+    const dueDate =
+        getElement(
+            "interventionDueDate"
+        )?.value ||
+        "";
+
+
+    const title =
+        getElement(
+            "interventionTitle"
+        )?.value.trim() ||
+        "";
+
+
+    const description =
+        getElement(
+            "interventionDescription"
+        )?.value.trim() ||
+        "";
+
+
+    if (!studentId) {
+
+        alert(
+            "Student ID is missing."
+        );
+
+        return;
+    }
+
+
+    if (
+        !title ||
+        !description ||
+        !dueDate
     ) {
+
+        alert(
+            "Please complete all required intervention fields."
+        );
+
+        return;
+    }
+
+
+    const button =
+        getElement(
+            "submitInterventionBtn"
+        );
+
+
+    try {
+
+        if (button) {
+
+            button.disabled =
+                true;
+
+
+            button.textContent =
+                "Sending...";
+
+        }
+
+
+        await apiRequest(
+            "/api/interventions",
+            {
+                method: "POST",
+
+                body:
+                    JSON.stringify({
+
+                        student_id:
+                            studentId,
+
+                        faculty_name:
+                            getElement(
+                                "facultyDisplayName"
+                            )?.textContent.trim() ||
+                            "Faculty",
+
+                        title:
+                            title,
+
+                        description:
+                            description,
+
+                        priority:
+                            priority,
+
+                        due_date:
+                            dueDate,
+
+                        action_type:
+                            actionType,
+
+                        reason_category:
+                            reasonCategory
+
+                    })
+            }
+        );
+
+
+        closeFacultyInterventionModal();
+
+
+        await loadFacultyInterventions();
+
+
+        await openStudentProfile(
+            studentId
+        );
+
+
+        alert(
+            "Intervention sent successfully. The student will see it in their Student Portal."
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Intervention error:",
+            error
+        );
+
+
+        alert(
+            `Could not send intervention: ${error.message}`
+        );
+
+
+    } finally {
+
+        if (button) {
+
+            button.disabled =
+                false;
+
+
+            button.textContent =
+                "🚀 Send Intervention to Student";
+
+        }
+
+    }
+
+}
+
+
+/* =========================================================
+   ACTIVE STUDENT INTERVENTIONS
+========================================================= */
+
+function renderActiveStudentInterventions(
+    studentId
+) {
+
+    const container =
+        getElement(
+            "profileInterventionsContainer"
+        );
+
+
+    if (!container) {
+        return;
+    }
+
+
+    const interventions =
+        facultyInterventions.filter(
+            item =>
+                String(
+                    item.student_id ||
+                    item.studentId ||
+                    ""
+                ) ===
+                String(
+                    studentId
+                )
+        );
+
+
+    renderProfileInterventions(
+        interventions
+    );
+
+
+    renderProfileAuditTrail(
+        interventions
+    );
+
+}
+
+
+function renderProfileInterventions(
+    interventions
+) {
+
+    const container =
+        getElement(
+            "profileInterventionsContainer"
+        );
+
+
+    if (!container) {
+        return;
+    }
+
+
+    if (!interventions.length) {
+
+        container.innerHTML = `
+            <div
+                class="empty-interventions-placeholder"
+            >
+
+                <p>
+                    No interventions have been assigned to this student yet.
+                </p>
+
+                <button
+                    type="button"
+                    class="secondary-button"
+                    onclick="openFacultyInterventionModal()"
+                >
+                    Create First Intervention
+                </button>
+
+            </div>
+        `;
+
+        return;
+    }
+
+
+    container.innerHTML =
+        interventions
+            .map(
+                intervention =>
+                    renderInterventionCard(
+                        intervention
+                    )
+            )
+            .join("");
+
+}
+
+
+function renderProfileAuditTrail(
+    interventions
+) {
+
+    const container =
+        getElement(
+            "profileAuditTrailContainer"
+        );
+
+
+    if (!container) {
+        return;
+    }
+
+
+    if (!interventions.length) {
+
+        container.innerHTML = `
+            <div class="empty-state">
+                No intervention history available.
+            </div>
+        `;
+
+        return;
+    }
+
+
+    const history = [];
+
+
+    interventions.forEach(
+        intervention => {
+
+            if (
+                Array.isArray(
+                    intervention.history
+                )
+            ) {
+
+                intervention.history.forEach(
+                    item => {
+
+                        history.push({
+
+                            ...item,
+
+                            interventionTitle:
+                                intervention.title ||
+                                "Intervention"
+
+                        });
+
+                    }
+                );
+
+            } else {
+
+                history.push({
+
+                    created_at:
+                        intervention.created_at,
+
+                    status:
+                        intervention.status,
+
+                    action:
+                        "Intervention assigned",
+
+                    description:
+                        intervention.description,
+
+                    interventionTitle:
+                        intervention.title ||
+                        "Intervention"
+
+                });
+
+            }
+
+        }
+    );
+
+
+    history.sort(
+        (a, b) =>
+            new Date(
+                b.created_at || 0
+            ) -
+            new Date(
+                a.created_at || 0
+            )
+    );
+
+
+    container.innerHTML =
+        history
+            .map(
+                item => `
+
+                    <div
+                        class="audit-timeline-item"
+                    >
+
+                        <div
+                            class="audit-dot"
+                        >
+                            •
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                ${escapeHtml(
+                                    item.action ||
+                                    item.status ||
+                                    "Update"
+                                )}
+                            </strong>
+
+                            <small>
+                                ${escapeHtml(
+                                    item.interventionTitle
+                                )}
+                                ·
+                                ${escapeHtml(
+                                    formatDateTime(
+                                        item.created_at
+                                    )
+                                )}
+                            </small>
+
+                            ${
+                                item.description
+                                    ? `
+                                        <p>
+                                            ${escapeHtml(
+                                                item.description
+                                            )}
+                                        </p>
+                                    `
+                                    : ""
+                            }
+
+                        </div>
+
+                    </div>
+
+                `
+            )
+            .join("");
+
+}
+
+
+/* =========================================================
+   REPORTS
+========================================================= */
+
+async function loadFacultyReports() {
+
+    try {
+
+        const data =
+            await apiRequest(
+                "/api/reports",
+                {
+                    method: "GET"
+                }
+            );
+
+
+        facultyReports =
+            data?.reports ||
+            data?.data ||
+            data ||
+            [];
+
+
+        if (
+            !Array.isArray(
+                facultyReports
+            )
+        ) {
+
+            facultyReports =
+                [];
+
+        }
+
+
+        renderFacultyReports(
+            facultyReports
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "Could not load faculty reports:",
+            error
+        );
+
+    }
+
+}
+
+
+function renderFacultyReports(
+    reports
+) {
+
+    const container =
+        getElement(
+            "facultyReportsList"
+        );
+
+
+    if (!container) {
+        return;
+    }
+
+
+    if (!reports.length) {
+
+        container.innerHTML = `
+            <div class="faculty-notes-empty">
+
+                <div class="faculty-notes-empty-icon">
+                    📄
+                </div>
+
+                <strong>
+                    No student reports yet
+                </strong>
+
+                <p>
+                    Submitted intervention reports will appear here.
+                </p>
+
+            </div>
+        `;
+
+        return;
+    }
+
+
+    container.innerHTML =
+        reports
+            .map(
+                report => {
+
+                    const id =
+                        report.report_id ||
+                        report.id ||
+                        "";
+
+
+                    const studentId =
+                        report.student_id ||
+                        "-";
+
+
+                    const title =
+                        report.title ||
+                        report.report_title ||
+                        "Progress Report";
+
+
+                    const description =
+                        report.description ||
+                        report.report ||
+                        report.content ||
+                        "";
+
+
+                    return `
+                        <article
+                            class="report-card"
+                        >
+
+                            <div
+                                class="report-header"
+                            >
+
+                                <div>
+
+                                    <strong>
+                                        ${escapeHtml(
+                                            title
+                                        )}
+                                    </strong>
+
+                                    <small>
+                                        Student ID:
+                                        ${escapeHtml(
+                                            studentId
+                                        )}
+                                    </small>
+
+                                </div>
+
+                                <span>
+                                    ${escapeHtml(
+                                        report.status ||
+                                        "Submitted"
+                                    )}
+                                </span>
+
+                            </div>
+
+
+                            <p>
+                                ${escapeHtml(
+                                    description
+                                )}
+                            </p>
+
+
+                            ${
+                                id
+                                    ? `
+                                        <button
+                                            type="button"
+                                            class="outline-button"
+                                            onclick="openFacultyReviewModal('${escapeHtml(id)}')"
+                                        >
+                                            Review
+                                        </button>
+                                    `
+                                    : ""
+                            }
+
+                        </article>
+                    `;
+
+                }
+            )
+            .join("");
+
+}
+
+
+function renderActiveStudentReports(
+    studentId
+) {
+
+    const reports =
+        facultyReports.filter(
+            report =>
+                String(
+                    report.student_id ||
+                    ""
+                ) ===
+                String(
+                    studentId
+                )
+        );
+
+
+    /*
+     * Reports are already visible through the
+     * main Faculty Reports section.
+     *
+     * This function is intentionally lightweight.
+     */
+
+    return reports;
+
+}
+
+
+/* =========================================================
+   FACULTY REVIEW
+========================================================= */
+
+async function openFacultyReviewModal(
+    interventionId
+) {
+
+    const modal =
+        getElement(
+            "facultyReviewModal"
+        );
+
+
+    const details =
+        getElement(
+            "facultyReviewDetails"
+        );
+
+
+    const hiddenId =
+        getElement(
+            "reviewInterventionId"
+        );
+
+
+    if (!modal) {
+        return;
+    }
+
+
+    const intervention =
+        facultyInterventions.find(
+            item =>
+                String(
+                    item.intervention_id ||
+                    item.id
+                ) ===
+                String(
+                    interventionId
+                )
+        );
+
+
+    if (!intervention) {
+
+        /*
+         * If the clicked ID is actually a report,
+         * try to find the related intervention.
+         */
+
+        const report =
+            facultyReports.find(
+                item =>
+                    String(
+                        item.report_id ||
+                        item.id
+                    ) ===
+                    String(
+                        interventionId
+                    )
+            );
+
+
+        if (report?.intervention_id) {
+
+            return openFacultyReviewModal(
+                report.intervention_id
+            );
+
+        }
+
+
+        alert(
+            "Intervention could not be found."
+        );
+
 
         return;
 
+    }
+
+
+    if (hiddenId) {
+
+        hiddenId.value =
+            interventionId;
+
+    }
+
+
+    if (details) {
+
+        details.innerHTML = `
+
+            <div
+                class="review-detail-row"
+            >
+
+                <strong>
+                    Student ID
+                </strong>
+
+                <span>
+                    ${escapeHtml(
+                        intervention.student_id ||
+                        "-"
+                    )}
+                </span>
+
+            </div>
+
+
+            <div
+                class="review-detail-row"
+            >
+
+                <strong>
+                    Intervention
+                </strong>
+
+                <span>
+                    ${escapeHtml(
+                        intervention.title ||
+                        "-"
+                    )}
+                </span>
+
+            </div>
+
+
+            <div
+                class="review-detail-row"
+            >
+
+                <strong>
+                    Current Status
+                </strong>
+
+                <span>
+                    ${escapeHtml(
+                        intervention.status ||
+                        "-"
+                    )}
+                </span>
+
+            </div>
+
+
+            <div
+                class="review-detail-description"
+            >
+
+                <strong>
+                    Instructions
+                </strong>
+
+                <p>
+                    ${escapeHtml(
+                        intervention.description ||
+                        "-"
+                    )}
+                </p>
+
+            </div>
+
+
+            ${
+                intervention.student_response ||
+                intervention.response
+                    ? `
+                        <div
+                            class="review-detail-description"
+                        >
+
+                            <strong>
+                                Student Response
+                            </strong>
+
+                            <p>
+                                ${escapeHtml(
+                                    intervention.student_response ||
+                                    intervention.response
+                                )}
+                            </p>
+
+                        </div>
+                    `
+                    : ""
+            }
+
+
+            ${
+                intervention.progress
+                    ? `
+                        <div
+                            class="review-detail-description"
+                        >
+
+                            <strong>
+                                Student Progress
+                            </strong>
+
+                            <p>
+                                ${escapeHtml(
+                                    intervention.progress
+                                )}
+                            </p>
+
+                        </div>
+                    `
+                    : ""
+            }
+
+        `;
+
+    }
+
+
+    showElement(
+        modal
+    );
+
+}
+
+
+function closeFacultyReviewModal() {
+
+    hideElement(
+        getElement(
+            "facultyReviewModal"
+        )
+    );
+
+}
+
+
+async function submitFacultyReview(
+    event
+) {
+
+    event.preventDefault();
+
+
+    const interventionId =
+        getElement(
+            "reviewInterventionId"
+        )?.value;
+
+
+    const status =
+        getElement(
+            "reviewStatusSelect"
+        )?.value;
+
+
+    const feedback =
+        getElement(
+            "reviewFeedbackInput"
+        )?.value.trim();
+
+
+    if (!interventionId) {
+
+        alert(
+            "Intervention ID is missing."
+        );
+
+        return;
+    }
+
+
+    if (!feedback) {
+
+        alert(
+            "Please enter faculty feedback."
+        );
+
+        return;
     }
 
 
     try {
 
-        await apiFetch(
-            "/api/student/" +
-            encodeURIComponent(
-                studentId
-            ) +
-            "/notes/" +
-            encodeURIComponent(
-                noteId
-            ),
+        await apiRequest(
+            `/api/interventions/${encodeURIComponent(interventionId)}/review`,
             {
-                method:
-                    "DELETE"
+                method: "POST",
+
+                body:
+                    JSON.stringify({
+
+                        status:
+                            status,
+
+                        feedback:
+                            feedback
+
+                    })
             }
         );
 
 
-        await loadFacultyNotes(
-            studentId
+        closeFacultyReviewModal();
+
+
+        await loadFacultyInterventions();
+
+
+        if (activeStudent) {
+
+            await openStudentProfile(
+                activeStudent.student_id ||
+                activeStudent.id
+            );
+
+        }
+
+
+        alert(
+            "Review submitted. The student will receive the faculty feedback."
         );
 
 
     } catch (error) {
 
         console.error(
-            "Delete note error:",
+            "Faculty review error:",
             error
         );
 
 
         alert(
-            error.message ||
-            "Unable to delete note."
+            `Could not submit review: ${error.message}`
         );
 
     }
@@ -2736,198 +4734,43 @@ async function deleteFacultyNote(
 }
 
 
-// ============================================================
-// FILTER STUDENTS BY RISK
-// ============================================================
+/* =========================================================
+   NOTIFICATIONS
+========================================================= */
 
-function filterStudentsByRisk(
-    risk
-) {
+function setupNotificationButton() {
 
-    const riskFilter =
+    const button =
         getElement(
-            "riskFilter"
+            "notificationButton"
         );
 
 
-    if (!riskFilter) {
+    if (!button) {
         return;
     }
 
 
-    riskFilter.value =
-        risk;
+    button.addEventListener(
+        "click",
+        () => {
 
+            const panel =
+                getElement(
+                    "notificationPanel"
+                );
 
-    const studentsSection =
-        document.querySelector(
-            ".students-section"
-        );
 
+            if (!panel) {
+                return;
+            }
 
-    loadStudents();
 
+            panel.classList.toggle(
+                "hidden"
+            );
 
-    if (studentsSection) {
-
-        studentsSection.scrollIntoView({
-            behavior: "smooth",
-            block: "start"
-        });
-
-    }
-
-}
-
-
-// ============================================================
-// CLEAR STUDENT FILTERS
-// ============================================================
-
-function clearStudentFilters() {
-
-    const search =
-        getElement(
-            "search"
-        );
-
-
-    const risk =
-        getElement(
-            "riskFilter"
-        );
-
-
-    const department =
-        getElement(
-            "departmentFilter"
-        );
-
-
-    if (search) {
-
-        search.value =
-            "";
-
-    }
-
-
-    if (risk) {
-
-        risk.value =
-            "All";
-
-    }
-
-
-    if (department) {
-
-        department.value =
-            "All";
-
-    }
-
-
-    loadStudents();
-
-}
-
-
-// ============================================================
-// CLOSE STUDENT PROFILE
-// ============================================================
-
-function closeStudentProfile() {
-
-    const overlay =
-        getElement(
-            "profileOverlay"
-        );
-
-
-    if (overlay) {
-
-        overlay.classList.add(
-            "hidden"
-        );
-
-    }
-
-
-    const profile =
-        getElement(
-            "profile"
-        );
-
-
-    if (
-        profile &&
-        !overlay
-    ) {
-
-        profile.classList.add(
-            "hidden"
-        );
-
-    }
-
-
-    activeStudent =
-        null;
-
-}
-
-
-// ============================================================
-// PROFILE OVERLAY
-// ============================================================
-
-function handleProfileOverlayClick(
-    event
-) {
-
-    const overlay =
-        getElement(
-            "profileOverlay"
-        );
-
-
-    if (!overlay) {
-        return;
-    }
-
-
-    if (
-        event.target ===
-        overlay
-    ) {
-
-        closeStudentProfile();
-
-    }
-
-}
-
-
-// ============================================================
-// NOTIFICATIONS
-// ============================================================
-
-function toggleNotifications() {
-
-    const panel =
-        getElement(
-            "notificationPanel"
-        );
-
-
-    if (!panel) {
-        return;
-    }
-
-
-    panel.classList.toggle(
-        "hidden"
+        }
     );
 
 }
@@ -2935,84 +4778,18 @@ function toggleNotifications() {
 
 function closeNotifications() {
 
-    const panel =
+    hideElement(
         getElement(
             "notificationPanel"
-        );
-
-
-    if (panel) {
-
-        panel.classList.add(
-            "hidden"
-        );
-
-    }
+        )
+    );
 
 }
 
 
-// ============================================================
-// UPDATE NOTIFICATIONS
-// ============================================================
-
-function updateNotifications(
-    summary
-) {
-
-    const critical =
-        document.querySelector(
-            ".notification-item.critical p"
-        );
-
-
-    const warning =
-        document.querySelector(
-            ".notification-item.warning p"
-        );
-
-
-    const success =
-        document.querySelector(
-            ".notification-item.success p"
-        );
-
-
-    if (critical) {
-
-        critical.textContent =
-            `${safeNumber(
-                summary.immediate_support
-            )} students require priority intervention.`;
-
-    }
-
-
-    if (warning) {
-
-        warning.textContent =
-            `${safeNumber(
-                summary.needs_attention
-            )} students have indicators requiring monitoring.`;
-
-    }
-
-
-    if (success) {
-
-        success.textContent =
-            `${safeNumber(
-                summary.on_track
-            )} students are currently on track.`;
-
-    }
-
-}
-
-
-// ============================================================
-// AI MENTOR
-// ============================================================
+/* =========================================================
+   AI MENTOR
+========================================================= */
 
 function openAIMentor() {
 
@@ -3027,26 +4804,31 @@ function openAIMentor() {
     }
 
 
-    mentor.classList.remove(
-        "hidden"
+    mentor.classList.add(
+        "open"
     );
 
 
-    const input =
-        getElement(
-            "aiMentorInput"
-        );
+    mentor.style.display =
+        "flex";
 
 
-    if (input) {
+    setTimeout(
+        () => {
 
-        setTimeout(
-            () =>
-                input.focus(),
-            100
-        );
+            const input =
+                getElement(
+                    "aiMentorInput"
+                );
 
-    }
+
+            if (input) {
+                input.focus();
+            }
+
+        },
+        100
+    );
 
 }
 
@@ -3059,56 +4841,21 @@ function closeAIMentor() {
         );
 
 
-    if (mentor) {
-
-        mentor.classList.add(
-            "hidden"
-        );
-
-    }
-
-}
-
-
-// ============================================================
-// AI MENTOR QUICK QUESTION
-// ============================================================
-
-function askAIMentor(
-    question
-) {
-
-    if (!question) {
+    if (!mentor) {
         return;
     }
 
 
-    openAIMentor();
-
-
-    addUserChatMessage(
-        question
+    mentor.classList.remove(
+        "open"
     );
 
 
-    setTimeout(
-        () => {
-
-            sendAIMentorMessage(
-                question,
-                true
-            );
-
-        },
-        350
-    );
+    mentor.style.display =
+        "none";
 
 }
 
-
-// ============================================================
-// AI MENTOR KEYBOARD
-// ============================================================
 
 function handleMentorKey(
     event
@@ -3116,7 +4863,8 @@ function handleMentorKey(
 
     if (
         event.key ===
-        "Enter"
+        "Enter" &&
+        !event.shiftKey
     ) {
 
         event.preventDefault();
@@ -3128,13 +4876,8 @@ function handleMentorKey(
 }
 
 
-// ============================================================
-// SEND AI MENTOR MESSAGE
-// ============================================================
-
-async function sendAIMentorMessage(
-    predefinedMessage = null,
-    isPredefined = false
+function askAIMentor(
+    question
 ) {
 
     const input =
@@ -3143,1641 +4886,96 @@ async function sendAIMentorMessage(
         );
 
 
-    let message =
-        predefinedMessage;
-
-
-    if (
-        !message &&
-        input
-    ) {
-
-        message =
-            input.value.trim();
-
-    }
-
-
-    if (!message) {
+    if (!input) {
         return;
     }
 
 
-    if (!isPredefined) {
-
-        addUserChatMessage(
-            message
-        );
-
-    }
+    input.value =
+        question;
 
 
-    if (input) {
-
-        input.value =
-            "";
-
-    }
-
-
-    const loadingId =
-        addTypingMessage();
-
-
-    try {
-
-        const answer =
-            await generateAIMentorResponse(
-                message
-            );
-
-
-        removeChatMessage(
-            loadingId
-        );
-
-
-        addAIChatMessage(
-            answer
-        );
-
-
-    } catch (error) {
-
-        console.error(
-            "AI Mentor error:",
-            error
-        );
-
-
-        removeChatMessage(
-            loadingId
-        );
-
-
-        addAIChatMessage(`
-
-            <strong>
-                AI Mentor
-            </strong>
-
-            <p>
-                I couldn't analyze the student data right now.
-                Please try again.
-            </p>
-
-        `);
-
-    }
+    sendAIMentorMessage();
 
 }
 
 
-// ============================================================
-// AI MENTOR DATA ANALYSIS
-// ============================================================
+function sendAIMentorMessage() {
 
-async function generateAIMentorResponse(
-    message
-) {
-
-    const normalized =
-        message
-            .toLowerCase()
-            .trim();
-
-
-    if (
-        normalized.includes(
-            "help"
-        ) ||
-        normalized.includes(
-            "what can you do"
-        ) ||
-        normalized.includes(
-            "what can i ask"
-        )
-    ) {
-
-        return `
-
-            <strong>
-                AI Mentor Capabilities
-            </strong>
-
-            <p>
-                I can analyze the student-success data and help faculty
-                make intervention decisions.
-            </p>
-
-            <p>
-                <b>
-                    I can answer questions about:
-                </b>
-            </p>
-
-            <p>
-                • Immediate support students<br>
-                • Students needing attention<br>
-                • On-track students<br>
-                • Placement risk<br>
-                • High performers<br>
-                • Department risk<br>
-                • Success score<br>
-                • Attendance<br>
-                • Student profiles<br>
-                • Student strengths<br>
-                • Intervention strategies
-            </p>
-
-            <p>
-                Try:
-                <b>
-                    "Which department has the highest risk?"
-                </b>
-            </p>
-
-        `;
-
-    }
-
-
-    const students =
-        await fetchAllStudents();
-
-
-    const matchingStudents =
-        findStudentsFromQuery(
-            normalized,
-            students
+    const input =
+        getElement(
+            "aiMentorInput"
         );
 
 
-    if (
-        matchingStudents.length
-    ) {
-
-        return createStudentAnalysis(
-            matchingStudents[0]
-        );
-
-    }
-
-
-    if (
-        normalized.includes(
-            "immediate"
-        ) ||
-        normalized.includes(
-            "critical"
-        ) ||
-        normalized.includes(
-            "urgent"
-        ) ||
-        normalized.includes(
-            "highest priority"
-        )
-    ) {
-
-        const riskStudents =
-            students.filter(
-                student =>
-                    student.risk_level ===
-                    "Immediate Support"
-            );
-
-
-        return `
-
-            <strong>
-                Immediate Support Students
-            </strong>
-
-            <p>
-                I found
-                <b>
-                    ${riskStudents.length}
-                </b>
-                students who currently require immediate support.
-            </p>
-
-            ${createStudentPreview(
-                riskStudents,
-                5
-            )}
-
-            <p>
-                <b>
-                    Recommended action:
-                </b>
-                assign faculty mentors, create individual recovery
-                plans and monitor progress closely.
-            </p>
-
-        `;
-
-    }
-
-
-    if (
-        normalized.includes(
-            "needs attention"
-        ) ||
-        normalized.includes(
-            "attention"
-        ) ||
-        normalized.includes(
-            "at risk"
-        ) ||
-        normalized.includes(
-            "risk students"
-        )
-    ) {
-
-        const riskStudents =
-            students.filter(
-                student =>
-                    student.risk_level ===
-                    "Needs Attention"
-            );
-
-
-        return `
-
-            <strong>
-                Students Needing Attention
-            </strong>
-
-            <p>
-                There are
-                <b>
-                    ${riskStudents.length}
-                </b>
-                students currently classified as
-                <b>
-                    Needs Attention
-                </b>.
-            </p>
-
-            ${createStudentPreview(
-                riskStudents,
-                5
-            )}
-
-            <p>
-                These students should receive early intervention
-                before their risk increases.
-            </p>
-
-        `;
-
-    }
-
-
-    if (
-        normalized.includes(
-            "on track"
-        ) ||
-        normalized.includes(
-            "doing well"
-        ) ||
-        normalized.includes(
-            "performing well"
-        )
-    ) {
-
-        const onTrack =
-            students.filter(
-                student =>
-                    student.risk_level ===
-                    "On Track"
-            );
-
-
-        return `
-
-            <strong>
-                Students On Track
-            </strong>
-
-            <p>
-                <b>
-                    ${onTrack.length}
-                </b>
-                students are currently classified as
-                <b>
-                    On Track
-                </b>.
-            </p>
-
-            ${createStudentPreview(
-                onTrack,
-                5
-            )}
-
-            <p>
-                These students can be encouraged through advanced
-                projects, certifications, hackathons and leadership
-                opportunities.
-            </p>
-
-        `;
-
-    }
-
-
-    if (
-        normalized.includes(
-            "placement risk"
-        ) ||
-        normalized.includes(
-            "placement"
-        ) ||
-        normalized.includes(
-            "job ready"
-        ) ||
-        normalized.includes(
-            "career"
-        )
-    ) {
-
-        const placementRisk =
-            students.filter(
-                student =>
-                    student.segment ===
-                    "Academic Strong / Placement Risk"
-            );
-
-
-        return `
-
-            <strong>
-                Placement Risk Analysis
-            </strong>
-
-            <p>
-                I identified
-                <b>
-                    ${placementRisk.length}
-                </b>
-                students in the
-                <b>
-                    Academic Strong / Placement Risk
-                </b>
-                segment.
-            </p>
-
-            ${createStudentPreview(
-                placementRisk,
-                5
-            )}
-
-            <p>
-                These students are academically strong but need
-                focused coding, aptitude and interview preparation.
-            </p>
-
-        `;
-
-    }
-
-
-    if (
-        normalized.includes(
-            "high performer"
-        ) ||
-        normalized.includes(
-            "top performer"
-        ) ||
-        normalized.includes(
-            "best students"
-        ) ||
-        normalized.includes(
-            "top students"
-        )
-    ) {
-
-        const performers =
-            students
-                .filter(
-                    student =>
-                        student.segment ===
-                        "High Performer"
-                )
-                .sort(
-                    (a, b) =>
-                        safeNumber(
-                            b.success_score
-                        ) -
-                        safeNumber(
-                            a.success_score
-                        )
-                );
-
-
-        return `
-
-            <strong>
-                High Performer Analysis
-            </strong>
-
-            <p>
-                There are
-                <b>
-                    ${performers.length}
-                </b>
-                students classified as
-                <b>
-                    High Performers
-                </b>.
-            </p>
-
-            ${createStudentPreview(
-                performers,
-                5
-            )}
-
-            <p>
-                Consider assigning advanced projects, hackathons,
-                certifications and leadership opportunities.
-            </p>
-
-        `;
-
-    }
-
-
-    if (
-        normalized.includes(
-            "department"
-        ) ||
-        normalized.includes(
-            "highest risk"
-        ) ||
-        normalized.includes(
-            "which department"
-        ) ||
-        normalized.includes(
-            "department risk"
-        )
-    ) {
-
-        return createDepartmentAnalysis(
-            students
-        );
-
-    }
-
-
-    if (
-        normalized.includes(
-            "intervene"
-        ) ||
-        normalized.includes(
-            "intervention"
-        ) ||
-        normalized.includes(
-            "how should"
-        ) ||
-        normalized.includes(
-            "what should faculty"
-        ) ||
-        normalized.includes(
-            "what should i do"
-        )
-    ) {
-
-        return `
-
-            <strong>
-                Recommended Intervention Strategy
-            </strong>
-
-            <p>
-                The platform recommends a tiered intervention model:
-            </p>
-
-            <p>
-                <b>
-                    1. Immediate Support
-                </b>
-                <br>
-                Assign a faculty mentor, create an individual recovery
-                plan and monitor progress closely.
-            </p>
-
-            <p>
-                <b>
-                    2. Needs Attention
-                </b>
-                <br>
-                Address specific risk factors such as attendance,
-                assignments, coding, aptitude or interview readiness.
-            </p>
-
-            <p>
-                <b>
-                    3. Placement Risk
-                </b>
-                <br>
-                Focus on aptitude, coding and interview preparation
-                while maintaining academic performance.
-            </p>
-
-            <p>
-                <b>
-                    4. High Performers
-                </b>
-                <br>
-                Provide advanced projects, certifications, hackathons
-                and leadership opportunities.
-            </p>
-
-        `;
-
-    }
-
-
-    if (
-        normalized.includes(
-            "success score"
-        ) ||
-        normalized.includes(
-            "score"
-        ) ||
-        normalized.includes(
-            "student health"
-        )
-    ) {
-
-        const summary =
-            await fetchSummaryData();
-
-
-        return `
-
-            <strong>
-                Student Success Score
-            </strong>
-
-            <p>
-                The current average Student Success Score is
-                <b>
-                    ${safeNumber(
-                        summary.average_success_score
-                    ).toFixed(1)}
-                    / 100
-                </b>.
-            </p>
-
-            <p>
-                The score combines academic performance, attendance,
-                LMS activity, engagement, placement readiness,
-                skills and feedback indicators.
-            </p>
-
-            <p>
-                A lower score indicates that the student may require
-                stronger academic, engagement or placement support.
-            </p>
-
-        `;
-
-    }
-
-
-    if (
-        normalized.includes(
-            "attendance"
-        ) ||
-        normalized.includes(
-            "absent"
-        )
-    ) {
-
-        const summary =
-            await fetchSummaryData();
-
-
-        const lowAttendance =
-            students
-                .filter(
-                    student =>
-                        safeNumber(
-                            student.attendance
-                        ) < 60
-                )
-                .sort(
-                    (a, b) =>
-                        safeNumber(
-                            a.attendance
-                        ) -
-                        safeNumber(
-                            b.attendance
-                        )
-                );
-
-
-        return `
-
-            <strong>
-                Attendance Analysis
-            </strong>
-
-            <p>
-                Current average attendance:
-                <b>
-                    ${safeNumber(
-                        summary.average_attendance
-                    ).toFixed(1)}%
-                </b>.
-            </p>
-
-            <p>
-                <b>
-                    ${lowAttendance.length}
-                </b>
-                students have attendance below 60%.
-            </p>
-
-            ${createStudentPreview(
-                lowAttendance,
-                5
-            )}
-
-            <p>
-                Recommended action: attendance counselling,
-                weekly monitoring and mentor follow-up.
-            </p>
-
-        `;
-
-    }
-
-
-    if (
-        normalized.includes(
-            "cgpa"
-        ) ||
-        normalized.includes(
-            "academic performance"
-        ) ||
-        normalized.includes(
-            "academics"
-        )
-    ) {
-
-        const sorted =
-            [...students]
-                .sort(
-                    (a, b) =>
-                        safeNumber(
-                            b.cgpa
-                        ) -
-                        safeNumber(
-                            a.cgpa
-                        )
-                );
-
-
-        const average =
-            students.length
-                ? students.reduce(
-                    (
-                        sum,
-                        student
-                    ) =>
-                        sum +
-                        safeNumber(
-                            student.cgpa
-                        ),
-                    0
-                ) /
-                students.length
-                : 0;
-
-
-        return `
-
-            <strong>
-                Academic Performance
-            </strong>
-
-            <p>
-                Average CGPA:
-                <b>
-                    ${average.toFixed(2)}
-                </b>.
-            </p>
-
-            <p>
-                Highest CGPA students:
-            </p>
-
-            ${createStudentPreview(
-                sorted,
-                5
-            )}
-
-            <p>
-                Students with low CGPA should receive academic
-                mentoring and subject-specific support.
-            </p>
-
-        `;
-
-    }
-
-
-    if (
-        normalized.includes(
-            "segment"
-        ) ||
-        normalized.includes(
-            "segmentation"
-        )
-    ) {
-
-        return createSegmentAnalysis(
-            students
-        );
-
-    }
-
-
-    return `
-
-        <strong>
-            AI Mentor
-        </strong>
-
-        <p>
-            I can analyze the student-success data for you.
-        </p>
-
-        <p>
-            Try asking:
-        </p>
-
-        <p>
-
-            <b>
-                "Which students need immediate support?"
-            </b>
-
-            <br><br>
-
-            <b>
-                "Which department has the highest risk?"
-            </b>
-
-            <br><br>
-
-            <b>
-                "Show placement risk students."
-            </b>
-
-            <br><br>
-
-            <b>
-                "What is the average attendance?"
-            </b>
-
-            <br><br>
-
-            <b>
-                "Show high performers."
-            </b>
-
-        </p>
-
-    `;
-
-}
-
-
-// ============================================================
-// FIND STUDENT FROM QUERY
-// ============================================================
-
-function findStudentsFromQuery(
-    query,
-    students
-) {
-
-    if (
-        !query ||
-        !students ||
-        !students.length
-    ) {
-
-        return [];
-
-    }
-
-
-    return students.filter(
-        student => {
-
-            const id =
-                String(
-                    student.student_id ||
-                    ""
-                ).toLowerCase();
-
-
-            const name =
-                String(
-                    student.name ||
-                    ""
-                ).toLowerCase();
-
-
-            return (
-                query.includes(id) ||
-                (
-                    name.length >= 3 &&
-                    query.includes(name)
-                )
-            );
-
-        }
-    );
-
-}
-
-
-// ============================================================
-// CREATE INDIVIDUAL STUDENT ANALYSIS
-// ============================================================
-
-function createStudentAnalysis(
-    student
-) {
-
-    const score =
-        safeNumber(
-            student.success_score
-        );
-
-
-    let recommendation =
-        "";
-
-
-    if (
-        student.risk_level ===
-        "Immediate Support"
-    ) {
-
-        recommendation =
-            "Immediate faculty intervention is recommended.";
-
-    } else if (
-        student.risk_level ===
-        "Needs Attention"
-    ) {
-
-        recommendation =
-            "Early intervention and regular mentor monitoring are recommended.";
-
-    } else {
-
-        recommendation =
-            "The student is currently on track. Continue monitoring and provide growth opportunities.";
-
-    }
-
-
-    const strengths =
-        student.recommendation &&
-        Array.isArray(
-            student.recommendation.student_strengths
-        )
-            ? student.recommendation.student_strengths
-            : [];
-
-
-    let strengthsHtml =
-        "";
-
-
-    if (
-        strengths.length
-    ) {
-
-        strengthsHtml = `
-
-            <p>
-                <b>
-                    Student Strengths:
-                </b>
-            </p>
-
-            <ul>
-
-                ${strengths.map(
-                    strength => {
-
-                        const formatted =
-                            formatStudentStrength(
-                                strength
-                            );
-
-
-                        return `
-                            <li>
-                                ${escapeHtml(
-                                    formatted
-                                )}
-                            </li>
-                        `;
-
-                    }
-                ).join("")}
-
-            </ul>
-
-        `;
-
-    }
-
-
-    return `
-
-        <strong>
-            Student Analysis
-        </strong>
-
-        <p>
-            <b>
-                ${escapeHtml(
-                    student.name
-                )}
-            </b>
-
-            (
-                ${escapeHtml(
-                    student.student_id
-                )}
-            )
-        </p>
-
-        <p>
-            Department:
-            <b>
-                ${escapeHtml(
-                    student.department
-                )}
-            </b>
-        </p>
-
-        <p>
-            Success Score:
-            <b>
-                ${score.toFixed(1)}/100
-            </b>
-        </p>
-
-        <p>
-            Risk:
-            <b>
-                ${escapeHtml(
-                    student.risk_level
-                )}
-            </b>
-        </p>
-
-        <p>
-            Segment:
-            <b>
-                ${escapeHtml(
-                    student.segment
-                )}
-            </b>
-        </p>
-
-        <p>
-            CGPA:
-            <b>
-                ${safeNumber(
-                    student.cgpa
-                ).toFixed(2)}
-            </b>
-
-            |
-
-            Attendance:
-            <b>
-                ${safeNumber(
-                    student.attendance
-                ).toFixed(1)}%
-            </b>
-        </p>
-
-        ${strengthsHtml}
-
-        <p>
-            <b>
-                Recommendation:
-            </b>
-
-            ${recommendation}
-        </p>
-
-    `;
-
-}
-
-
-// ============================================================
-// FETCH ALL STUDENTS
-// ============================================================
-
-async function fetchAllStudents() {
-
-    const response =
-        await apiFetch(
-            "/api/students"
-        );
-
-
-    return await response.json();
-
-}
-
-
-// ============================================================
-// FETCH STUDENTS BY RISK
-// ============================================================
-
-async function fetchStudentsByRisk(
-    risk
-) {
-
-    const response =
-        await apiFetch(
-            "/api/students?risk=" +
-            encodeURIComponent(
-                risk
-            )
-        );
-
-
-    return await response.json();
-
-}
-
-
-// ============================================================
-// FETCH SUMMARY
-// ============================================================
-
-async function fetchSummaryData() {
-
-    const response =
-        await apiFetch(
-            "/api/summary"
-        );
-
-
-    return await response.json();
-
-}
-
-
-// ============================================================
-// CREATE STUDENT PREVIEW
-// ============================================================
-
-function createStudentPreview(
-    students,
-    limit = 5
-) {
-
-    if (
-        !students ||
-        !students.length
-    ) {
-
-        return `
-
-            <p>
-                No matching students were found.
-            </p>
-
-        `;
-
-    }
-
-
-    const selected =
-        students.slice(
-            0,
-            limit
-        );
-
-
-    let html = `
-
-        <div
-            style="
-                margin:10px 0;
-                border-top:1px solid #e5e7eb;
-            "
-        >
-
-    `;
-
-
-    selected.forEach(
-        student => {
-
-            html += `
-
-                <div
-                    style="
-                        padding:8px 0;
-                        border-bottom:1px solid #e5e7eb;
-                        cursor:pointer;
-                    "
-                    onclick="loadStudentProfile('${escapeHtml(
-                        student.student_id
-                    )}')"
-                >
-
-                    <b>
-                        ${escapeHtml(
-                            student.student_id
-                        )}
-                    </b>
-
-                    -
-
-                    ${escapeHtml(
-                        student.name
-                    )}
-
-                    <br>
-
-                    <small>
-
-                        Score:
-                        ${safeNumber(
-                            student.success_score
-                        ).toFixed(1)}
-
-                        |
-
-                        ${escapeHtml(
-                            student.department
-                        )}
-
-                        |
-
-                        ${escapeHtml(
-                            student.risk_level
-                        )}
-
-                    </small>
-
-                </div>
-
-            `;
-
-        }
-    );
-
-
-    html += `
-        </div>
-    `;
-
-
-    if (
-        students.length >
-        limit
-    ) {
-
-        html += `
-
-            <small>
-
-                Showing ${limit} of
-                ${students.length} matching students.
-                Use the dashboard filters to view the complete list.
-
-            </small>
-
-        `;
-
-    }
-
-
-    return html;
-
-}
-
-
-// ============================================================
-// DEPARTMENT STATISTICS
-// ============================================================
-
-function calculateDepartmentStats(
-    students
-) {
-
-    const map = {};
-
-
-    students.forEach(
-        student => {
-
-            const department =
-                student.department ||
-                "Unknown";
-
-
-            if (
-                !map[department]
-            ) {
-
-                map[department] = {
-
-                    department:
-                        department,
-
-                    total:
-                        0,
-
-                    riskCount:
-                        0,
-
-                    immediate:
-                        0,
-
-                    needsAttention:
-                        0,
-
-                    scoreTotal:
-                        0,
-
-                    attendanceTotal:
-                        0,
-
-                    placementReady:
-                        0
-
-                };
-
-            }
-
-
-            map[department].total++;
-
-
-            map[department].scoreTotal +=
-                safeNumber(
-                    student.success_score
-                );
-
-
-            map[department].attendanceTotal +=
-                safeNumber(
-                    student.attendance
-                );
-
-
-            if (
-                student.risk_level ===
-                "Immediate Support"
-            ) {
-
-                map[department].riskCount++;
-
-                map[department].immediate++;
-
-            }
-
-
-            if (
-                student.risk_level ===
-                "Needs Attention"
-            ) {
-
-                map[department].riskCount++;
-
-                map[department].needsAttention++;
-
-            }
-
-
-            if (
-                student.placement_outcome ===
-                "Ready"
-            ) {
-
-                map[department].placementReady++;
-
-            }
-
-        }
-    );
-
-
-    return Object.values(
-        map
-    ).map(
-        item => {
-
-            return {
-
-                department:
-                    item.department,
-
-                total:
-                    item.total,
-
-                riskCount:
-                    item.riskCount,
-
-                immediate:
-                    item.immediate,
-
-                needsAttention:
-                    item.needsAttention,
-
-                riskPercentage:
-                    item.total
-                        ? item.riskCount /
-                          item.total *
-                          100
-                        : 0,
-
-                averageScore:
-                    item.total
-                        ? item.scoreTotal /
-                          item.total
-                        : 0,
-
-                averageAttendance:
-                    item.total
-                        ? item.attendanceTotal /
-                          item.total
-                        : 0,
-
-                placementReady:
-                    item.placementReady
-
-            };
-
-        }
-    );
-
-}
-
-
-// ============================================================
-// DEPARTMENT ANALYSIS
-// ============================================================
-
-function createDepartmentAnalysis(
-    students
-) {
-
-    const stats =
-        calculateDepartmentStats(
-            students
-        );
-
-
-    const sorted =
-        stats.sort(
-            (a, b) =>
-                b.riskPercentage -
-                a.riskPercentage
-        );
-
-
-    let html = `
-
-        <strong>
-            Department Risk Analysis
-        </strong>
-
-        <p>
-            Departments ranked by the percentage of students
-            requiring intervention:
-        </p>
-
-        <div>
-
-    `;
-
-
-    sorted.forEach(
-        item => {
-
-            html += `
-
-                <div
-                    style="
-                        padding:8px 0;
-                        border-bottom:1px solid #e5e7eb;
-                    "
-                >
-
-                    <b>
-                        ${escapeHtml(
-                            item.department
-                        )}
-                    </b>
-
-                    <br>
-
-                    <small>
-
-                        Risk:
-                        ${item.riskCount}/${item.total}
-                        (${item.riskPercentage.toFixed(1)}%)
-
-                        |
-
-                        Avg Score:
-                        ${item.averageScore.toFixed(1)}
-
-                        |
-
-                        Placement Ready:
-                        ${item.placementReady}
-
-                    </small>
-
-                </div>
-
-            `;
-
-        }
-    );
-
-
-    html += `
-        </div>
-    `;
-
-
-    if (
-        sorted.length
-    ) {
-
-        html += `
-
-            <p>
-
-                <b>
-                    Highest risk department:
-                </b>
-
-                ${escapeHtml(
-                    sorted[0].department
-                )}
-
-                with
-
-                ${sorted[0].riskPercentage.toFixed(1)}%
-
-                of students requiring intervention.
-
-            </p>
-
-        `;
-
-    }
-
-
-    return html;
-
-}
-
-
-// ============================================================
-// SEGMENT ANALYSIS
-// ============================================================
-
-function createSegmentAnalysis(
-    students
-) {
-
-    const map = {};
-
-
-    students.forEach(
-        student => {
-
-            const segment =
-                student.segment ||
-                "Developing";
-
-
-            if (
-                !map[segment]
-            ) {
-
-                map[segment] = {
-
-                    segment:
-                        segment,
-
-                    count:
-                        0
-
-                };
-
-            }
-
-
-            map[segment].count++;
-
-        }
-    );
-
-
-    const segments =
-        Object.values(
-            map
-        ).sort(
-            (a, b) =>
-                b.count -
-                a.count
-        );
-
-
-    let html = `
-
-        <strong>
-            Student Segmentation
-        </strong>
-
-        <p>
-            The current student population is divided into
-            the following AI-oriented segments:
-        </p>
-
-    `;
-
-
-    segments.forEach(
-        item => {
-
-            html += `
-
-                <p>
-
-                    <b>
-                        ${escapeHtml(
-                            item.segment
-                        )}
-                    </b>:
-
-                    ${item.count} students
-
-                </p>
-
-            `;
-
-        }
-    );
-
-
-    return html;
-
-}
-
-
-// ============================================================
-// AI CHAT HELPERS
-// ============================================================
-
-function getChatContainer() {
-
-    return (
+    const container =
         getElement(
             "aiChatMessages"
-        ) ||
-        getElement(
-            "aiMentorMessages"
-        )
+        );
+
+
+    if (
+        !input ||
+        !container
+    ) {
+
+        return;
+
+    }
+
+
+    const question =
+        input.value.trim();
+
+
+    if (!question) {
+        return;
+    }
+
+
+    appendMentorMessage(
+        "You",
+        question,
+        "user"
+    );
+
+
+    input.value =
+        "";
+
+
+    const answer =
+        generateAIMentorAnswer(
+            question
+        );
+
+
+    setTimeout(
+        () => {
+
+            appendMentorMessage(
+                "AI Mentor",
+                answer,
+                "ai"
+            );
+
+        },
+        300
     );
 
 }
 
 
-function addUserChatMessage(
-    message
+function appendMentorMessage(
+    sender,
+    message,
+    type
 ) {
 
     const container =
-        getChatContainer();
+        getElement(
+            "aiChatMessages"
+        );
 
 
     if (!container) {
@@ -4785,19 +4983,48 @@ function addUserChatMessage(
     }
 
 
-    const wrapper =
+    const id =
+        `mentor-message-${++typingMessageCounter}`;
+
+
+    const div =
         document.createElement(
             "div"
         );
 
 
-    wrapper.className =
-        "ai-message user-message";
+    div.id =
+        id;
 
 
-    wrapper.innerHTML = `
+    div.className =
+        type === "user"
+            ? "user-message"
+            : "ai-message";
 
-        <div class="message-content">
+
+    div.innerHTML = `
+
+        <div
+            class="message-avatar"
+        >
+            ${
+                type === "user"
+                    ? "👤"
+                    : "✦"
+            }
+        </div>
+
+
+        <div
+            class="message-content"
+        >
+
+            <strong>
+                ${escapeHtml(
+                    sender
+                )}
+            </strong>
 
             <p>
                 ${escapeHtml(
@@ -4811,173 +5038,8 @@ function addUserChatMessage(
 
 
     container.appendChild(
-        wrapper
+        div
     );
-
-
-    scrollChatToBottom();
-
-}
-
-
-function addAIChatMessage(
-    message
-) {
-
-    const container =
-        getChatContainer();
-
-
-    if (!container) {
-        return;
-    }
-
-
-    const wrapper =
-        document.createElement(
-            "div"
-        );
-
-
-    wrapper.className =
-        "ai-message";
-
-
-    wrapper.innerHTML = `
-
-        <div class="message-avatar">
-            ✦
-        </div>
-
-        <div class="message-content">
-
-            <strong>
-                AI Mentor
-            </strong>
-
-            <div>
-                ${message}
-            </div>
-
-        </div>
-
-    `;
-
-
-    container.appendChild(
-        wrapper
-    );
-
-
-    scrollChatToBottom();
-
-}
-
-
-// ============================================================
-// TYPING MESSAGE
-// ============================================================
-
-function addTypingMessage() {
-
-    const container =
-        getChatContainer();
-
-
-    if (!container) {
-        return null;
-    }
-
-
-    typingMessageCounter++;
-
-
-    const id =
-        "typing-" +
-        typingMessageCounter;
-
-
-    const wrapper =
-        document.createElement(
-            "div"
-        );
-
-
-    wrapper.id =
-        id;
-
-
-    wrapper.className =
-        "ai-message";
-
-
-    wrapper.innerHTML = `
-
-        <div class="message-avatar">
-            ✦
-        </div>
-
-        <div class="message-content">
-
-            <strong>
-                AI Mentor
-            </strong>
-
-            <p>
-                Analyzing student data...
-            </p>
-
-        </div>
-
-    `;
-
-
-    container.appendChild(
-        wrapper
-    );
-
-
-    scrollChatToBottom();
-
-
-    return id;
-
-}
-
-
-function removeChatMessage(
-    id
-) {
-
-    if (!id) {
-        return;
-    }
-
-
-    const element =
-        document.getElementById(
-            id
-        );
-
-
-    if (element) {
-
-        element.remove();
-
-    }
-
-}
-
-
-function scrollChatToBottom() {
-
-    const container =
-        getChatContainer();
-
-
-    if (!container) {
-        return;
-    }
 
 
     container.scrollTop =
@@ -4986,290 +5048,646 @@ function scrollChatToBottom() {
 }
 
 
-// ============================================================
-// PROFILE OVERLAY EVENTS
-// ============================================================
+function generateAIMentorAnswer(
+    question
+) {
 
-function setupProfileOverlay() {
-
-    const overlay =
-        getElement(
-            "profileOverlay"
-        );
+    const q =
+        question.toLowerCase();
 
 
-    if (!overlay) {
-        return;
-    }
+    const students =
+        Array.isArray(
+            currentStudents
+        )
+            ? currentStudents
+            : [];
 
 
-    overlay.addEventListener(
-        "click",
-        handleProfileOverlayClick
-    );
+    if (
+        q.includes("immediate") ||
+        q.includes("critical") ||
+        q.includes("support")
+    ) {
 
-}
+        const critical =
+            students.filter(
+                student => {
 
-
-// ============================================================
-// SEARCH EVENTS
-// ============================================================
-
-function setupStudentFilters() {
-
-    /*
-        The current HTML already uses:
-
-        oninput="loadStudents()"
-        onchange="loadStudents()"
-
-        Therefore no extra listeners are attached.
-    */
-
-}
+                    const risk =
+                        String(
+                            student.risk_level ||
+                            student.risk ||
+                            student.priority ||
+                            ""
+                        ).toLowerCase();
 
 
-// ============================================================
-// KEYBOARD SHORTCUTS
-// ============================================================
-
-function setupKeyboardShortcuts() {
-
-    document.addEventListener(
-        "keydown",
-        event => {
-
-            if (
-                event.key ===
-                "Escape"
-            ) {
-
-                closeStudentProfile();
-
-                closeAIMentor();
-
-                closeNotifications();
-
-            }
-
-        }
-    );
-
-}
-
-
-// ============================================================
-// NAVIGATION
-// ============================================================
-
-function setupNavigation() {
-
-    const links =
-        document.querySelectorAll(
-            ".nav-link"
-        );
-
-
-    links.forEach(
-        link => {
-
-            link.addEventListener(
-                "click",
-                event => {
-
-                    const target =
-                        link.getAttribute(
-                            "href"
-                        );
-
-
-                    if (
-                        !target ||
-                        !target.startsWith(
-                            "#"
-                        )
-                    ) {
-
-                        return;
-
-                    }
-
-
-                    const section =
-                        document.querySelector(
-                            target
-                        );
-
-
-                    if (!section) {
-
-                        return;
-
-                    }
-
-
-                    event.preventDefault();
-
-
-                    section.scrollIntoView({
-                        behavior:
-                            "smooth",
-
-                        block:
-                            "start"
-                    });
-
-
-                    links.forEach(
-                        item =>
-                            item.classList.remove(
-                                "active"
-                            )
-                    );
-
-
-                    link.classList.add(
-                        "active"
+                    return (
+                        risk.includes("critical") ||
+                        risk.includes("immediate")
                     );
 
                 }
             );
 
+
+        if (!critical.length) {
+
+            return (
+                "No students are currently classified as requiring immediate support in the loaded data."
+            );
+
         }
-    );
-
-}
 
 
-// ============================================================
-// NOTIFICATIONS SETUP
-// ============================================================
-
-function setupNotifications() {
-
-    const button =
-        getElement(
-            "notificationButton"
-        );
-
-
-    if (button) {
-
-        button.addEventListener(
-            "click",
-            event => {
-
-                event.stopPropagation();
-
-                toggleNotifications();
-
-            }
+        return (
+            `I found ${critical.length} student(s) requiring immediate support. ` +
+            critical
+                .slice(0, 5)
+                .map(
+                    student =>
+                        `${student.name || student.student_name || "Student"} (${student.student_id || student.id || "ID"})`
+                )
+                .join(", ") +
+            "."
         );
 
     }
 
 
-    document.addEventListener(
-        "click",
-        event => {
+    if (
+        q.includes("department") &&
+        q.includes("risk")
+    ) {
 
-            const panel =
-                getElement(
-                    "notificationPanel"
-                );
+        const departmentCounts =
+            {};
 
 
-            if (!panel) {
-                return;
+        students.forEach(
+            student => {
+
+                const department =
+                    student.department ||
+                    "Unknown";
+
+
+                const risk =
+                    String(
+                        student.risk_level ||
+                        student.risk ||
+                        ""
+                    ).toLowerCase();
+
+
+                if (
+                    risk.includes("critical") ||
+                    risk.includes("high") ||
+                    risk.includes("immediate")
+                ) {
+
+                    departmentCounts[
+                        department
+                    ] =
+                        (
+                            departmentCounts[
+                                department
+                            ] ||
+                            0
+                        ) + 1;
+
+                }
+
             }
+        );
 
 
-            if (
-                !panel.contains(
-                    event.target
-                ) &&
-                !event.target.closest(
-                    "#notificationButton"
-                )
-            ) {
+        const sorted =
+            Object.entries(
+                departmentCounts
+            ).sort(
+                (a, b) =>
+                    b[1] - a[1]
+            );
 
-                closeNotifications();
 
-            }
+        if (!sorted.length) {
+
+            return (
+                "I could not identify a high-risk department from the currently loaded data."
+            );
 
         }
+
+
+        return (
+            `The department with the highest number of high-risk students is ${sorted[0][0]} with ${sorted[0][1]} student(s).`
+        );
+
+    }
+
+
+    if (
+        q.includes("placement") &&
+        q.includes("risk")
+    ) {
+
+        const riskStudents =
+            students.filter(
+                student => {
+
+                    const placement =
+                        String(
+                            student.placement_readiness ||
+                            student.placement ||
+                            ""
+                        ).toLowerCase();
+
+
+                    return (
+                        placement.includes("low") ||
+                        placement.includes("risk") ||
+                        placement.includes("not ready")
+                    );
+
+                }
+            );
+
+
+        return (
+            riskStudents.length
+                ? `I found ${riskStudents.length} student(s) with low or concerning placement readiness.`
+                : "No clearly low-placement-readiness students were found in the currently loaded data."
+        );
+
+    }
+
+
+    if (
+        q.includes("intervene") ||
+        q.includes("intervention")
+    ) {
+
+        return (
+            "Start with the student's biggest measurable issue. " +
+            "For declining performance, assign targeted academic support. " +
+            "For attendance problems, assign an attendance improvement plan. " +
+            "For subject weakness, assign subject-specific remedial work. " +
+            "Then review the student's submitted progress and provide feedback."
+        );
+
+    }
+
+
+    if (
+        q.includes("declin") ||
+        q.includes("downgrade")
+    ) {
+
+        const declining =
+            students.filter(
+                student =>
+                    String(
+                        student.performance_trend ||
+                        student.trend ||
+                        ""
+                    )
+                        .toLowerCase()
+                        .includes("declin")
+            );
+
+
+        return (
+            `There are ${declining.length} student(s) currently showing a declining performance trend in the loaded data. Review their attendance, subject performance, backlogs and LMS activity before assigning an intervention.`
+        );
+
+    }
+
+
+    if (
+        q.includes("attendance")
+    ) {
+
+        const lowAttendance =
+            students.filter(
+                student =>
+                    safeNumber(
+                        student.attendance
+                    ) < 75
+            );
+
+
+        return (
+            `${lowAttendance.length} student(s) have attendance below 75% based on the currently loaded student data. These students should be reviewed for attendance-related intervention.`
+        );
+
+    }
+
+
+    return (
+        "I can help you analyse student risk, performance decline, attendance, placement readiness, departments and intervention strategies. Try asking: 'Which students need immediate support?'"
     );
 
 }
 
 
-// ============================================================
-// AI MENTOR SETUP
-// ============================================================
+/* =========================================================
+   STUDENT LOGIN
+========================================================= */
 
-function setupAIMentor() {
+function openStudentLogin() {
 
-    /*
-        The current HTML already has:
-
-        onclick="openAIMentor()"
-
-        Therefore no additional click listener is required.
-    */
-
-}
-
-
-// ============================================================
-// INITIAL DASHBOARD LOADING
-// ============================================================
-
-async function initializeDashboard() {
-
-    console.log(
-        "Initializing AI Student Success Platform..."
-    );
-
-
-    setupStudentFilters();
-
-    setupProfileOverlay();
-
-    setupKeyboardShortcuts();
-
-    setupNavigation();
-
-    setupNotifications();
-
-    setupAIMentor();
-
-
-    await Promise.all([
-
-        loadSummary(),
-
-        loadSegments(),
-
-        loadDepartments()
-
-    ]);
-
-
-    await loadStudents();
-
-
-    console.log(
-        "Dashboard initialized successfully."
+    showElement(
+        getElement(
+            "studentLoginOverlay"
+        )
     );
 
 }
 
 
-// ============================================================
-// START APPLICATION
-// ============================================================
+function closeStudentLogin() {
+
+    hideElement(
+        getElement(
+            "studentLoginOverlay"
+        )
+    );
+
+}
+
+
+async function submitStudentLogin(
+    event
+) {
+
+    event.preventDefault();
+
+
+    const studentId =
+        getElement(
+            "studentLoginId"
+        )?.value.trim();
+
+
+    const password =
+        getElement(
+            "studentLoginPassword"
+        )?.value;
+
+
+    const status =
+        getElement(
+            "studentLoginStatus"
+        );
+
+
+    if (
+        !studentId ||
+        !password
+    ) {
+
+        return;
+
+    }
+
+
+    if (status) {
+
+        status.textContent =
+            "Logging in...";
+
+
+        status.className =
+            "faculty-notes-status loading";
+
+    }
+
+
+    try {
+
+        const data =
+            await apiRequest(
+                "/api/student/login",
+                {
+                    method: "POST",
+
+                    body:
+                        JSON.stringify({
+
+                            student_id:
+                                studentId,
+
+                            password:
+                                password
+
+                        })
+                }
+            );
+
+
+        if (data?.token) {
+
+            localStorage.setItem(
+                "student_token",
+                data.token
+            );
+
+        }
+
+
+        if (
+            data?.access_token
+        ) {
+
+            localStorage.setItem(
+                "student_token",
+                data.access_token
+            );
+
+        }
+
+
+        window.location.href =
+            "/student.html";
+
+
+    } catch (error) {
+
+        console.error(
+            "Student login error:",
+            error
+        );
+
+
+        if (status) {
+
+            status.textContent =
+                error.message ||
+                "Invalid Student ID or password.";
+
+
+            status.className =
+                "faculty-notes-status error";
+
+        }
+
+    }
+
+}
+
+
+function studentLogout() {
+
+    localStorage.removeItem(
+        "student_token"
+    );
+
+
+    localStorage.removeItem(
+        "studentToken"
+    );
+
+
+    window.location.href =
+        "/";
+
+}
+
+
+/* =========================================================
+   DATE HELPERS
+========================================================= */
+
+function setTodayAsMinimumDate() {
+
+    const dateInput =
+        getElement(
+            "interventionDueDate"
+        );
+
+
+    if (!dateInput) {
+        return;
+    }
+
+
+    const today =
+        new Date();
+
+
+    const year =
+        today.getFullYear();
+
+
+    const month =
+        String(
+            today.getMonth() + 1
+        ).padStart(
+            2,
+            "0"
+        );
+
+
+    const day =
+        String(
+            today.getDate()
+        ).padStart(
+            2,
+            "0"
+        );
+
+
+    dateInput.min =
+        `${year}-${month}-${day}`;
+
+}
+
+
+/* =========================================================
+   MODAL CLOSE HELPERS
+========================================================= */
 
 document.addEventListener(
-    "DOMContentLoaded",
-    initializeDashboard
+    "click",
+    event => {
+
+        const profileOverlay =
+            getElement(
+                "profileOverlay"
+            );
+
+
+        const studentLoginOverlay =
+            getElement(
+                "studentLoginOverlay"
+            );
+
+
+        const interventionModal =
+            getElement(
+                "facultyInterventionModal"
+            );
+
+
+        const reviewModal =
+            getElement(
+                "facultyReviewModal"
+            );
+
+
+        if (
+            event.target ===
+            profileOverlay
+        ) {
+
+            closeStudentProfile();
+
+        }
+
+
+        if (
+            event.target ===
+            studentLoginOverlay
+        ) {
+
+            closeStudentLogin();
+
+        }
+
+
+        if (
+            event.target ===
+            interventionModal
+        ) {
+
+            closeFacultyInterventionModal();
+
+        }
+
+
+        if (
+            event.target ===
+            reviewModal
+        ) {
+
+            closeFacultyReviewModal();
+
+        }
+
+    }
 );
+
+
+/* =========================================================
+   GLOBAL EXPORTS
+   Needed because index.html uses onclick=""
+========================================================= */
+
+window.loadStudents =
+    loadStudents;
+
+
+window.clearStudentFilters =
+    clearStudentFilters;
+
+
+window.filterStudentsByPriority =
+    filterStudentsByPriority;
+
+
+window.filterStudentsByTrend =
+    filterStudentsByTrend;
+
+
+window.filterStudentsByMetric =
+    filterStudentsByMetric;
+
+
+window.openStudentProfile =
+    openStudentProfile;
+
+
+window.closeStudentProfile =
+    closeStudentProfile;
+
+
+window.openAIMentor =
+    openAIMentor;
+
+
+window.closeAIMentor =
+    closeAIMentor;
+
+
+window.askAIMentor =
+    askAIMentor;
+
+
+window.sendAIMentorMessage =
+    sendAIMentorMessage;
+
+
+window.handleMentorKey =
+    handleMentorKey;
+
+
+window.openStudentLogin =
+    openStudentLogin;
+
+
+window.closeStudentLogin =
+    closeStudentLogin;
+
+
+window.submitStudentLogin =
+    submitStudentLogin;
+
+
+window.studentLogout =
+    studentLogout;
+
+
+window.addFacultyNote =
+    addFacultyNote;
+
+
+window.loadFacultyNotes =
+    loadFacultyNotes;
+
+
+window.clearFacultyNoteForm =
+    clearFacultyNoteForm;
+
+
+window.saveStudentSpecificNote =
+    saveStudentSpecificNote;
+
+
+window.openFacultyInterventionModal =
+    openFacultyInterventionModal;
+
+
+window.closeFacultyInterventionModal =
+    closeFacultyInterventionModal;
+
+
+window.submitFacultyIntervention =
+    submitFacultyIntervention;
+
+
+window.openFacultyReviewModal =
+    openFacultyReviewModal;
+
+
+window.closeFacultyReviewModal =
+    closeFacultyReviewModal;
+
+
+window.submitFacultyReview =
+    submitFacultyReview;
+
+
+window.closeNotifications =
+    closeNotifications;

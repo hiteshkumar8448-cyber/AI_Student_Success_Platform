@@ -4138,3 +4138,393 @@ footer p {
         flex-direction: column;
     }
 }
+
+/* =====================================================
+   FACULTY INTERVENTION MODALS — COMPLETE REDESIGN
+   Matches #facultyInterventionModal and #facultyReviewModal
+===================================================== */
+
+#facultyInterventionModal,
+#facultyReviewModal {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    overflow-y: auto;
+    background: rgba(15, 23, 42, 0.66);
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(7px);
+}
+
+#facultyInterventionModal.hidden,
+#facultyReviewModal.hidden {
+    display: none !important;
+}
+
+#facultyInterventionModal *,
+#facultyReviewModal * {
+    box-sizing: border-box;
+}
+
+#facultyInterventionModal .intervention-dialog,
+#facultyReviewModal .intervention-dialog {
+    position: relative;
+    width: 100%;
+    max-width: 760px;
+    max-height: calc(100vh - 48px);
+    margin: auto;
+    padding: 0;
+    overflow-y: auto;
+    background: #ffffff;
+    color: #172033;
+    border: 1px solid #e5e7eb;
+    border-radius: 22px;
+    box-shadow: 0 30px 90px rgba(15, 23, 42, 0.3);
+    animation: interventionModalEnter 0.22s ease-out;
+}
+
+@keyframes interventionModalEnter {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.99);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Header */
+
+#facultyInterventionModal .modal-dialog-header,
+#facultyReviewModal .modal-dialog-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 27px 30px 23px;
+    border-bottom: 1px solid #edf0f5;
+    background: linear-gradient(135deg, #f5f7ff 0%, #ffffff 78%);
+}
+
+#facultyInterventionModal .modal-dialog-header .section-label,
+#facultyReviewModal .modal-dialog-header .section-label {
+    display: inline-block;
+    margin-bottom: 10px;
+    color: #4f46e5;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.25px;
+    line-height: 1.5;
+}
+
+#facultyInterventionModal .modal-dialog-header h2,
+#facultyReviewModal .modal-dialog-header h2 {
+    margin: 0;
+    color: #172033;
+    font-size: clamp(21px, 3vw, 27px);
+    font-weight: 800;
+    line-height: 1.3;
+    letter-spacing: -0.7px;
+}
+
+#facultyInterventionModal .modal-dialog-header p,
+#facultyReviewModal .modal-dialog-header p {
+    margin: 9px 0 0;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+#facultyInterventionModal .modal-close,
+#facultyReviewModal .modal-close {
+    display: flex;
+    flex: 0 0 38px;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    padding: 0;
+    border: 1px solid #e2e8f0;
+    border-radius: 11px;
+    background: #ffffff;
+    color: #64748b;
+    font-size: 25px;
+    line-height: 1;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+#facultyInterventionModal .modal-close:hover,
+#facultyReviewModal .modal-close:hover {
+    background: #fee2e2;
+    border-color: #fecaca;
+    color: #dc2626;
+}
+
+/* Student identity banner */
+
+#facultyInterventionModal .intervention-student-banner {
+    margin: 22px 30px 6px;
+    padding: 17px 19px;
+    border: 1px solid #dbe4ff;
+    border-radius: 15px;
+    background: linear-gradient(115deg, #eef2ff, #f8faff);
+    color: #312e81;
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+#facultyInterventionModal .intervention-student-banner:empty {
+    display: none;
+}
+
+/* Form layout */
+
+#facultyInterventionModal #facultyInterventionForm,
+#facultyReviewModal #facultyReviewForm {
+    padding: 18px 30px 28px;
+}
+
+#facultyInterventionModal .faculty-form-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 18px;
+}
+
+#facultyInterventionModal .faculty-form-field,
+#facultyReviewModal .faculty-form-field {
+    min-width: 0;
+    margin: 0 0 19px;
+}
+
+#facultyInterventionModal .faculty-form-field label,
+#facultyReviewModal .faculty-form-field label {
+    display: block;
+    margin: 0 0 8px;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 750;
+    line-height: 1.5;
+}
+
+#facultyInterventionModal .faculty-form-field input,
+#facultyInterventionModal .faculty-form-field select,
+#facultyInterventionModal .faculty-form-field textarea,
+#facultyReviewModal .faculty-form-field input,
+#facultyReviewModal .faculty-form-field select,
+#facultyReviewModal .faculty-form-field textarea {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    margin: 0;
+    padding: 12px 13px;
+    border: 1px solid #dbe1eb;
+    border-radius: 11px;
+    outline: none;
+    background: #f8fafc;
+    color: #1e293b;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.5;
+    box-shadow: none;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease,
+                background 0.18s ease;
+}
+
+#facultyInterventionModal .faculty-form-field select,
+#facultyReviewModal .faculty-form-field select {
+    padding-right: 30px;
+    cursor: pointer;
+}
+
+#facultyInterventionModal .faculty-form-field textarea,
+#facultyReviewModal .faculty-form-field textarea {
+    min-height: 125px;
+    resize: vertical;
+    line-height: 1.7;
+}
+
+#facultyInterventionModal .faculty-form-field input::placeholder,
+#facultyInterventionModal .faculty-form-field textarea::placeholder,
+#facultyReviewModal .faculty-form-field textarea::placeholder {
+    color: #94a3b8;
+    font-weight: 400;
+}
+
+#facultyInterventionModal .faculty-form-field input:focus,
+#facultyInterventionModal .faculty-form-field select:focus,
+#facultyInterventionModal .faculty-form-field textarea:focus,
+#facultyReviewModal .faculty-form-field input:focus,
+#facultyReviewModal .faculty-form-field select:focus,
+#facultyReviewModal .faculty-form-field textarea:focus {
+    border-color: #818cf8;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.13);
+}
+
+#facultyInterventionModal .faculty-form-field small,
+#facultyReviewModal .faculty-form-field small {
+    display: block;
+    margin-top: 8px;
+    color: #64748b;
+    font-size: 11px;
+    line-height: 1.6;
+}
+
+/* Footer actions */
+
+#facultyInterventionModal .modal-dialog-actions,
+#facultyReviewModal .modal-dialog-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 11px;
+    margin-top: 5px;
+    padding-top: 21px;
+    border-top: 1px solid #edf0f5;
+}
+
+#facultyInterventionModal .modal-dialog-actions button,
+#facultyReviewModal .modal-dialog-actions button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    margin: 0;
+    padding: 11px 18px;
+    border: 1px solid transparent;
+    border-radius: 11px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 750;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease,
+                background 0.18s ease;
+}
+
+#facultyInterventionModal .modal-dialog-actions .secondary-button,
+#facultyReviewModal .modal-dialog-actions .secondary-button {
+    border-color: #dfe4ec;
+    background: #ffffff;
+    color: #475569;
+}
+
+#facultyInterventionModal .modal-dialog-actions .secondary-button:hover,
+#facultyReviewModal .modal-dialog-actions .secondary-button:hover {
+    background: #f1f5f9;
+}
+
+#facultyInterventionModal .modal-dialog-actions .primary-button,
+#facultyReviewModal .modal-dialog-actions .primary-button {
+    background: linear-gradient(135deg, #4f46e5, #6d28d9);
+    color: #ffffff;
+    box-shadow: 0 5px 13px rgba(79, 70, 229, 0.2);
+}
+
+#facultyInterventionModal .modal-dialog-actions .primary-button:hover,
+#facultyReviewModal .modal-dialog-actions .primary-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(79, 70, 229, 0.28);
+}
+
+#facultyInterventionModal .modal-dialog-actions button:focus-visible,
+#facultyReviewModal .modal-dialog-actions button:focus-visible,
+#facultyInterventionModal .modal-close:focus-visible,
+#facultyReviewModal .modal-close:focus-visible {
+    outline: 3px solid rgba(99, 102, 241, 0.35);
+    outline-offset: 3px;
+}
+
+/* Review content */
+
+#facultyReviewModal .review-details-container {
+    margin: 22px 30px 0;
+    padding: 17px;
+    border: 1px solid #e2e8f0;
+    border-radius: 13px;
+    background: #f8fafc;
+    color: #334155;
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+#facultyReviewModal .review-details-container:empty {
+    display: none;
+}
+
+/* Small screens */
+
+@media (max-width: 640px) {
+    #facultyInterventionModal,
+    #facultyReviewModal {
+        align-items: flex-start;
+        padding: 12px;
+    }
+
+    #facultyInterventionModal .intervention-dialog,
+    #facultyReviewModal .intervention-dialog {
+        max-height: calc(100vh - 24px);
+        border-radius: 17px;
+    }
+
+    #facultyInterventionModal .modal-dialog-header,
+    #facultyReviewModal .modal-dialog-header {
+        padding: 21px 19px;
+        gap: 12px;
+    }
+
+    #facultyInterventionModal .modal-dialog-header h2,
+    #facultyReviewModal .modal-dialog-header h2 {
+        font-size: 21px;
+    }
+
+    #facultyInterventionModal .intervention-student-banner {
+        margin: 17px 19px 4px;
+    }
+
+    #facultyInterventionModal #facultyInterventionForm,
+    #facultyReviewModal #facultyReviewForm {
+        padding: 18px 19px 22px;
+    }
+
+    #facultyInterventionModal .faculty-form-row {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0;
+    }
+
+    #facultyInterventionModal .modal-dialog-actions,
+    #facultyReviewModal .modal-dialog-actions {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+
+    #facultyInterventionModal .modal-dialog-actions button,
+    #facultyReviewModal .modal-dialog-actions button {
+        width: 100%;
+    }
+
+    #facultyReviewModal .review-details-container {
+        margin: 17px 19px 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #facultyInterventionModal .intervention-dialog,
+    #facultyReviewModal .intervention-dialog {
+        animation: none;
+    }
+
+    #facultyInterventionModal *,
+    #facultyReviewModal * {
+        transition: none !important;
+    }
+}
