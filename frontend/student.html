@@ -3,1591 +3,449 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Student Success Portal</title>
-
-    <link rel="stylesheet" href="/student.css">
-    
+    <title>Student Portal — AI Student Success Platform</title>
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/student.css">
+    <link rel="stylesheet" href="/css/ai-modal.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/js/auth-guard.js"></script>
 </head>
-
 <body>
-
-    <!-- =========================
-         STUDENT DASHBOARD
-    ========================== -->
-    <div class="student-dashboard" id="studentDashboard">
-
-        <!-- =========================
-             TOP BAR
-        ========================== -->
-        <header class="student-topbar">
-
-            <div class="student-brand">
-                <div class="student-brand-icon">
-                    🎓
-                </div>
-
-                <div>
-                    <h1>Student Success</h1>
-                    <span>AI Academic Success Platform</span>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">🎓</div>
+                <div class="sidebar-brand">
+                    <h2>Student Success AI</h2>
+                    <span>Student Portal</span>
                 </div>
             </div>
 
-            <div class="student-top-actions">
-
-                <div class="student-account">
-                    <div class="student-account-avatar">
-                        <span id="topStudentInitial">S</span>
-                    </div>
-
-                    <div class="student-account-details">
-                        <strong id="topStudentName">Student</strong>
-                        <small id="topStudentId">Student ID</small>
-                    </div>
-                </div>
-
-                <button
-                    type="button"
-                    class="logout-button"
-                    id="studentLogoutButton">
-                    Logout
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-section="sec-student-dashboard">
+                    <span class="nav-icon">📊</span> Dashboard
                 </button>
+                <button class="nav-item" data-section="sec-student-performance">
+                    <span class="nav-icon">📈</span> My Performance
+                </button>
+                <button class="nav-item" data-section="sec-student-messages">
+                    <span class="nav-icon">💬</span> Messages
+                    <span id="studentSidebarMsgBadge" class="unread-badge" style="display: none; margin-left: auto;">0</span>
+                </button>
+                <button class="nav-item" data-section="sec-student-interventions">
+                    <span class="nav-icon">🛡️</span> Interventions
+                    <span id="studentSidebarIntBadge" class="unread-badge" style="display: none; margin-left: auto;">0</span>
+                </button>
+                <button class="nav-item" data-section="sec-student-materials">
+                    <span class="nav-icon">📚</span> Study Materials
+                </button>
+                <button class="nav-item" data-section="sec-student-goals">
+                    <span class="nav-icon">🎯</span> Academic Goals
+                </button>
+                <button class="nav-item" data-section="sec-student-recommendations">
+                    <span class="nav-icon">💡</span> AI Recommendations
+                </button>
+                <button type="button" class="nav-item" onclick="openAiModal()" style="color: #2563eb; font-weight: 700;">
+                    <span class="nav-icon">✨</span> Ask Student Success AI
+                </button>
+            </nav>
 
+            <div class="sidebar-footer">
+                <div class="user-profile-badge">
+                    <div class="user-avatar">ST</div>
+                    <div class="user-info">
+                        <div id="sidebarStudentName" class="user-name">Student Account</div>
+                        <div id="sidebarStudentId" class="user-role-label">STU1001</div>
+                    </div>
+                </div>
+                <button type="button" class="btn-logout" onclick="logout()">
+                    <span>🚪</span> Sign Out
+                </button>
             </div>
+        </aside>
 
-        </header>
-
-
-        <!-- =========================
-             MAIN CONTENT
-        ========================== -->
-        <main class="student-dashboard-main">
-
-            <!-- =========================
-                 WELCOME
-            ========================== -->
-            <section class="student-welcome-section">
-
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Navbar -->
+            <header class="top-navbar">
                 <div>
-                    <p class="welcome-label">STUDENT DASHBOARD</p>
-
-                    <h2>
-                        Welcome back,
-                        <span id="dashboardStudentName">Student</span>!
-                    </h2>
-
-                    <p class="welcome-subtitle">
-                        Track your academic performance, AI success score,
-                        interventions, faculty support and improvement.
-                    </p>
+                    <div id="studentNameDisplay" class="navbar-title">Welcome Back</div>
+                    <div id="studentIdDisplay" style="font-size: 0.78rem; color: var(--text-secondary);">Student Account</div>
                 </div>
 
-                <div class="welcome-student-info">
-                    <span id="dashboardStudentId">Student ID</span>
-                </div>
-
-            </section>
-
-
-            <!-- =========================
-                 SUMMARY CARDS
-            ========================== -->
-            <section class="student-summary-grid">
-
-                <div class="student-summary-card">
-
-                    <div class="summary-card-icon">
-                        📊
-                    </div>
-
-                    <div>
-                        <span class="summary-label">
-                            Success Score
-                        </span>
-
-                        <strong id="studentSuccessScore">
-                            --
-                        </strong>
-
-                        <small>
-                            out of 100
-                        </small>
-                    </div>
-
-                </div>
-
-
-                <div class="student-summary-card">
-
-                    <div class="summary-card-icon">
-                        🎓
-                    </div>
-
-                    <div>
-                        <span class="summary-label">
-                            CGPA
-                        </span>
-
-                        <strong id="studentCgpa">
-                            --
-                        </strong>
-                    </div>
-
-                </div>
-
-
-                <div class="student-summary-card">
-
-                    <div class="summary-card-icon">
-                        📅
-                    </div>
-
-                    <div>
-                        <span class="summary-label">
-                            Attendance
-                        </span>
-
-                        <strong id="studentAttendance">
-                            --
-                        </strong>
-                    </div>
-
-                </div>
-
-
-                <div class="student-summary-card">
-
-                    <div class="summary-card-icon">
-                        ⚠️
-                    </div>
-
-                    <div>
-                        <span class="summary-label">
-                            Risk Level
-                        </span>
-
-                        <strong id="studentRiskLevel">
-                            --
-                        </strong>
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            <!-- =========================
-                 ACADEMIC TRAJECTORY & DOWNGRADE DETECTION
-            ========================== -->
-            <section class="student-trajectory-card" id="studentTrajectorySection">
-
-                <div class="trajectory-header">
-                    <span class="trajectory-eyebrow">ACADEMIC JOURNEY &amp; PERFORMANCE TREND</span>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
-                        <h3 id="studentTrendTitle" style="margin:0; font-size:20px;">Academic Performance Trajectory</h3>
-                        <span id="studentTrendBadge" class="trend-badge">Checking...</span>
-                    </div>
-                </div>
-
-                <div class="trajectory-compare-grid">
-                    <div class="trajectory-stat">
-                        <span>Previous CGPA</span>
-                        <strong id="studentPrevCgpa">-</strong>
-                    </div>
-                    <div class="trajectory-stat">
-                        <span>Current CGPA</span>
-                        <strong id="studentCurrentCgpa">-</strong>
-                    </div>
-                    <div class="trajectory-stat">
-                        <span>Performance Change</span>
-                        <strong id="studentCgpaChange">-</strong>
-                    </div>
-                    <div class="trajectory-stat">
-                        <span>Active Backlogs</span>
-                        <strong id="studentBacklogsCount">-</strong>
-                    </div>
-                </div>
-
-                <div id="studentAiExplanationBox" class="student-ai-explanation">
-                    <p id="studentAiExplanationText">Loading academic analysis...</p>
-                </div>
-
-                <div id="studentStrugglingFactors" class="student-factors-strip"></div>
-
-            </section>
-
-
-            <!-- =========================
-                 AI RECOMMENDATION
-            ========================== -->
-            <section class="student-ai-card">
-
-                <div class="ai-card-icon">
-                    🤖
-                </div>
-
-                <div class="ai-card-content">
-
-                    <span class="ai-card-label">
-                        AI SUCCESS RECOMMENDATION
-                    </span>
-
-                    <p id="studentRecommendation">
-                        Your personalized recommendation will appear here.
-                    </p>
-
-                </div>
-
-            </section>
-
-
-            <!-- =========================
-                 CONNECTED INTERVENTION
-            ========================== -->
-            <section
-                class="dashboard-panel intervention-main-panel"
-                id="studentInterventionSection">
-
-                <div class="panel-header">
-
-                    <div class="panel-header-left">
-
-                        <div class="panel-icon">
-                            🎯
-                        </div>
-
-                        <div>
-                            <h3>My Interventions</h3>
-
-                            <p>
-                                Faculty support assigned specifically to you
-                            </p>
-                        </div>
-
-                    </div>
-
-                    <span
-                        class="panel-status-badge"
-                        id="studentInterventionStatus">
-                        No active intervention
-                    </span>
-
-                </div>
-
-
-                <!-- Active Intervention -->
-                <div
-                    class="student-intervention-card"
-                    id="studentActiveIntervention">
-
-                    <div class="intervention-card-top">
-
-                        <div>
-
-                            <span class="intervention-small-label">
-                                CURRENT INTERVENTION
-                            </span>
-
-                            <h4 id="studentInterventionTitle">
-                                No intervention assigned
-                            </h4>
-
-                        </div>
-
-                        <div
-                            class="intervention-status"
-                            id="studentInterventionStatusDetail">
-                            --
-                        </div>
-
-                    </div>
-
-
-                    <div class="intervention-details-grid">
-
-                        <div class="intervention-detail">
-
-                            <span>
-                                Reason
-                            </span>
-
-                            <strong id="studentInterventionReason">
-                                --
-                            </strong>
-
-                        </div>
-
-
-                        <div class="intervention-detail">
-
-                            <span>
-                                Recommended Action
-                            </span>
-
-                            <strong id="studentInterventionAction">
-                                --
-                            </strong>
-
-                        </div>
-
-
-                        <div class="intervention-detail">
-
-                            <span>
-                                Faculty Action
-                            </span>
-
-                            <strong id="studentInterventionFacultyAction">
-                                --
-                            </strong>
-
-                        </div>
-
-
-                        <div class="intervention-detail">
-
-                            <span>
-                                Intervention Date
-                            </span>
-
-                            <strong id="studentInterventionDate">
-                                --
-                            </strong>
-
-                        </div>
-
-
-                        <div class="intervention-detail">
-
-                            <span>
-                                Follow-up Date
-                            </span>
-
-                            <strong id="studentInterventionFollowup">
-                                --
-                            </strong>
-
-                        </div>
-
-
-                        <div class="intervention-detail">
-
-                            <span>
-                                Assigned By
-                            </span>
-
-                            <strong id="studentInterventionAssignedBy">
-                                Faculty
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- Faculty Instruction -->
-                    <div class="intervention-instruction-box">
-
-                        <div class="instruction-icon">
-                            📌
-                        </div>
-
-                        <div>
-
-                            <strong>
-                                Faculty Instructions
-                            </strong>
-
-                            <p id="studentInterventionInstructions">
-                                No special instructions have been provided.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- Student Action -->
-                    <div class="student-intervention-action-box">
-
-                        <div>
-
-                            <span class="intervention-small-label">
-                                YOUR ACTION
-                            </span>
-
-                            <h4>
-                                Complete the assigned activity
-                            </h4>
-
-                            <p>
-                                Complete the recommended action and submit
-                                your progress/report to your faculty.
-                            </p>
-
-                        </div>
-
-                        <div class="student-action-buttons-group" style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
-
-                            <button
-                                type="button"
-                                class="secondary-button"
-                                id="acknowledgeInterventionButton"
-                                onclick="acknowledgeCurrentIntervention()"
-                            >
-                                ✓ Acknowledge / Mark Viewed
-                            </button>
-
-                            <button
-                                type="button"
-                                class="secondary-button"
-                                id="openStudentReplyButton"
-                                onclick="openStudentReplyModal()"
-                            >
-                                💬 Reply to Faculty
-                            </button>
-
-                            <button
-                                type="button"
-                                class="primary-action-button"
-                                id="openInterventionReportButton"
-                            >
-                                📝 Submit Progress
-                            </button>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <!-- No Intervention -->
-                <div
-                    class="empty-intervention-state hidden"
-                    id="studentNoIntervention">
-
-                    <div class="empty-state-icon">
-                        🎯
-                    </div>
-
-                    <h4>No active intervention</h4>
-
-                    <p>
-                        You currently do not have an active faculty
-                        intervention.
-                    </p>
-
-                </div>
-
-            </section>
-
-
-            <!-- =========================
-                 REPORT SUBMISSION
-            ========================== -->
-            <section
-                class="dashboard-panel intervention-report-panel hidden"
-                id="studentReportSection">
-
-                <div class="panel-header">
-
-                    <div class="panel-header-left">
-
-                        <div class="panel-icon">
-                            📝
-                        </div>
-
-                        <div>
-                            <h3>Submit Intervention Progress</h3>
-
-                            <p>
-                                Send your completed work and progress to faculty
-                            </p>
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <form id="studentInterventionReportForm">
-
-                    <div class="form-group">
-
-                        <label for="studentReportTitle">
-                            Report Title
-                        </label>
-
-                        <input
-                            type="text"
-                            id="studentReportTitle"
-                            name="report_title"
-                            placeholder="Example: Assignment completion report"
-                            required>
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label for="studentReportDescription">
-                            Progress / Work Description
-                        </label>
-
-                        <textarea
-                            id="studentReportDescription"
-                            name="description"
-                            rows="5"
-                            placeholder="Explain what you completed, what you learned and your progress..."
-                            required></textarea>
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label for="studentReportEvidence">
-                            Evidence / File
-                        </label>
-
-                        <input
-                            type="file"
-                            id="studentReportEvidence"
-                            name="evidence">
-
-                        <small>
-                            Upload assignment, certificate, screenshot,
-                            document or other evidence if required.
-                        </small>
-
-                    </div>
-
-
-                    <div
-                        class="report-message hidden"
-                        id="studentReportMessage">
-                    </div>
-
-
-                    <div class="form-actions">
-
-                        <button
-                            type="button"
-                            class="secondary-action-button"
-                            id="cancelInterventionReportButton">
-                            Cancel
-                        </button>
-
-                        <button
-                            type="submit"
-                            class="primary-action-button">
-                            Submit Report
-                        </button>
-
-                    </div>
-
-                </form>
-
-            </section>
-
-
-            <!-- =========================
-                 BEFORE / AFTER
-            ========================== -->
-            <section
-                class="dashboard-panel full-width-panel"
-                id="studentOutcomeSection">
-
-                <div class="panel-header">
-
-                    <div class="panel-header-left">
-
-                        <div class="panel-icon">
-                            📈
-                        </div>
-
-                        <div>
-                            <h3>My Improvement</h3>
-
-                            <p>
-                                Before vs current academic performance
-                            </p>
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <div class="student-outcome-grid">
-
-                    <div class="outcome-card">
-
-                        <span>
-                            Before Intervention
-                        </span>
-
-                        <strong id="studentBeforeSuccessScore">
-                            --
-                        </strong>
-
-                        <small>
-                            Success Score
-                        </small>
-
-                        <div
-                            class="outcome-risk"
-                            id="studentBeforeRisk">
-                            --
-                        </div>
-
-                    </div>
-
-
-                    <div class="outcome-card">
-
-                        <span>
-                            Current
-                        </span>
-
-                        <strong id="studentAfterSuccessScore">
-                            --
-                        </strong>
-
-                        <small>
-                            Success Score
-                        </small>
-
-                        <div
-                            class="outcome-risk"
-                            id="studentAfterRisk">
-                            --
-                        </div>
-
-                    </div>
-
-
-                    <div class="outcome-card improvement-card">
-
-                        <span>
-                            Improvement
-                        </span>
-
-                        <strong id="studentScoreImprovement">
-                            --
-                        </strong>
-
-                        <small>
-                            points
-                        </small>
-
-                    </div>
-
-                </div>
-
-
-                <div class="indicator-improvement-grid">
-
-                    <div class="indicator-card">
-
-                        <span>
-                            Attendance
-                        </span>
-
-                        <strong id="studentBeforeAfterAttendance">
-                            --
-                        </strong>
-
-                        <small id="studentAttendanceImprovement">
-                            --
-                        </small>
-
-                        <div class="progress-bar">
-                            <div
-                                id="studentAttendanceProgress"
-                                class="progress-fill">
-                            </div>
-                        </div>
-
-                    </div>
-
-
-                    <div class="indicator-card">
-
-                        <span>
-                            Academic Performance
-                        </span>
-
-                        <strong id="studentBeforeAfterAcademic">
-                            --
-                        </strong>
-
-                        <small id="studentAcademicImprovement">
-                            --
-                        </small>
-
-                        <div class="progress-bar">
-                            <div
-                                id="studentAcademicProgress"
-                                class="progress-fill">
-                            </div>
-                        </div>
-
-                    </div>
-
-
-                    <div class="indicator-card">
-
-                        <span>
-                            LMS Engagement
-                        </span>
-
-                        <strong id="studentBeforeAfterLms">
-                            --
-                        </strong>
-
-                        <small id="studentLmsImprovement">
-                            --
-                        </small>
-
-                        <div class="progress-bar">
-                            <div
-                                id="studentLmsProgress"
-                                class="progress-fill">
-                            </div>
-                        </div>
-
-                    </div>
-
-
-                    <div class="indicator-card">
-
-                        <span>
-                            Assignment Completion
-                        </span>
-
-                        <strong id="studentBeforeAfterAssignments">
-                            --
-                        </strong>
-
-                        <small id="studentAssignmentImprovement">
-                            --
-                        </small>
-
-                        <div class="progress-bar">
-                            <div
-                                id="studentAssignmentProgress"
-                                class="progress-fill">
-                            </div>
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            <!-- =========================
-                 ACADEMIC PERFORMANCE
-            ========================== -->
-            <section class="student-main-grid">
-
-                <div class="dashboard-panel">
-
-                    <div class="panel-header">
-
-                        <div class="panel-header-left">
-
-                            <div class="panel-icon">
-                                🎓
-                            </div>
-
-                            <div>
-                                <h3>Academic Performance</h3>
-
-                                <p>
-                                    Your current academic information
-                                </p>
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="data-list">
-
-                        <div class="data-row">
-                            <span>Department</span>
-                            <strong id="studentDepartment">--</strong>
-                        </div>
-
-                        <div class="data-row">
-                            <span>Year</span>
-                            <strong id="studentYear">--</strong>
-                        </div>
-
-                        <div class="data-row">
-                            <span>CGPA</span>
-                            <strong id="studentAcademicCgpa">--</strong>
-                        </div>
-
-                        <div class="data-row">
-                            <span>Backlogs</span>
-                            <strong id="studentBacklogs">--</strong>
-                        </div>
-
-                        <div class="data-row">
-                            <span>Subject Performance</span>
-                            <strong id="studentSubjectPerformance">--</strong>
-                        </div>
-
-                        <div class="data-row">
-                            <span>Attendance</span>
-                            <strong id="studentAcademicAttendance">--</strong>
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <!-- =========================
-                     AI ANALYSIS
-                ========================== -->
-                <div class="dashboard-panel">
-
-                    <div class="panel-header">
-
-                        <div class="panel-header-left">
-
-                            <div class="panel-icon">
-                                🤖
-                            </div>
-
-                            <div>
-                                <h3>AI Success Analysis</h3>
-
-                                <p>
-                                    AI-generated student analysis
-                                </p>
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="data-list">
-
-                        <div class="data-row">
-                            <span>Success Score</span>
-                            <strong id="studentAiScore">--</strong>
-                        </div>
-
-                        <div class="data-row">
-                            <span>Risk Level</span>
-                            <strong id="studentAiRisk">--</strong>
-                        </div>
-
-                        <div class="data-row">
-                            <span>Student Segment</span>
-                            <strong id="studentSegment">--</strong>
-                        </div>
-
-                        <div class="data-row">
-                            <span>Placement Outcome</span>
-                            <strong id="studentPlacement">--</strong>
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            <!-- =========================
-                 SUBJECT-WISE PERFORMANCE BREAKDOWN
-            ========================== -->
-            <section class="dashboard-panel full-width-panel" id="studentSubjectsSection">
-
-                <div class="panel-header">
-
-                    <div class="panel-header-left">
-
-                        <div class="panel-icon">
-                            📊
-                        </div>
-
-                        <div>
-                            <h3>Subject-Wise Performance &amp; Progress</h3>
-
-                            <p>
-                                Course breakdown, current marks, trends, and risk status
-                            </p>
-                        </div>
-
-                    </div>
-
-                </div>
-
-                <div class="table-container" style="overflow-x:auto;">
-                    <table class="subject-breakdown-table" style="width:100%; border-collapse:collapse; margin-top:8px;">
-                        <thead>
-                            <tr style="text-align:left; border-bottom:1px solid #e2e8f0; font-size:12px; color:#64748b; text-transform:uppercase;">
-                                <th style="padding:10px 14px;">Course Code</th>
-                                <th style="padding:10px 14px;">Subject Name</th>
-                                <th style="padding:10px 14px;">Credits</th>
-                                <th style="padding:10px 14px;">Score / Marks</th>
-                                <th style="padding:10px 14px;">Grade</th>
-                                <th style="padding:10px 14px;">Status / Trend</th>
-                            </tr>
-                        </thead>
-                        <tbody id="studentSubjectList">
-                            <tr>
-                                <td colspan="6" style="padding:16px; text-align:center; color:#94a3b8;">Loading subject performance...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-            </section>
-
-
-            <!-- =========================
-                 LEARNING ENGAGEMENT
-            ========================== -->
-            <section class="dashboard-panel full-width-panel">
-
-                <div class="panel-header">
-
-                    <div class="panel-header-left">
-
-                        <div class="panel-icon">
-                            📚
-                        </div>
-
-                        <div>
-                            <h3>Learning Engagement</h3>
-
-                            <p>
-                                Your learning and participation activity
-                            </p>
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <div class="student-metrics-grid">
-
-                    <div class="metric-card">
-                        <span>LMS Login</span>
-                        <strong id="studentLmsLogin">--</strong>
-                    </div>
-
-                    <div class="metric-card">
-                        <span>Assignment Completion</span>
-                        <strong id="studentAssignmentCompletion">--</strong>
-                    </div>
-
-                    <div class="metric-card">
-                        <span>Events Participated</span>
-                        <strong id="studentEvents">--</strong>
-                    </div>
-
-                    <div class="metric-card">
-                        <span>Clubs</span>
-                        <strong id="studentClubs">--</strong>
-                    </div>
-
-                    <div class="metric-card">
-                        <span>Hackathons</span>
-                        <strong id="studentHackathons">--</strong>
-                    </div>
-
-                    <div class="metric-card">
-                        <span>Certifications</span>
-                        <strong id="studentCertifications">--</strong>
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            <!-- =========================
-                 PLACEMENT READINESS
-            ========================== -->
-            <section class="dashboard-panel full-width-panel">
-
-                <div class="panel-header">
-
-                    <div class="panel-header-left">
-
-                        <div class="panel-icon">
-                            💼
-                        </div>
-
-                        <div>
-                            <h3>Placement Readiness</h3>
-
-                            <p>
-                                Your career preparation indicators
-                            </p>
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <div class="student-metrics-grid">
-
-                    <div class="metric-card">
-                        <span>Aptitude Score</span>
-                        <strong id="studentAptitude">--</strong>
-                    </div>
-
-                    <div class="metric-card">
-                        <span>Coding Score</span>
-                        <strong id="studentCoding">--</strong>
-                    </div>
-
-                    <div class="metric-card">
-                        <span>Mock Interview</span>
-                        <strong id="studentMockInterview">--</strong>
-                    </div>
-
-                    <div class="metric-card">
-                        <span>Technical Skill</span>
-                        <strong id="studentTechnical">--</strong>
-                    </div>
-
-                    <div class="metric-card">
-                        <span>Soft Skill</span>
-                        <strong id="studentSoftSkill">--</strong>
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            <!-- =========================
-                 STRENGTHS + ACTIONS
-            ========================== -->
-            <section class="student-main-grid">
-
-                <div class="dashboard-panel">
-
-                    <div class="panel-header">
-
-                        <div class="panel-header-left">
-
-                            <div class="panel-icon">
-                                💪
-                            </div>
-
-                            <div>
-                                <h3>Your Strengths</h3>
-
-                                <p>
-                                    Areas where you are performing well
-                                </p>
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <div
-                        class="strength-list"
-                        id="studentStrengths">
-
-                        <div class="empty-feedback">
-                            Strengths will appear here.
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <div class="dashboard-panel">
-
-                    <div class="panel-header">
-
-                        <div class="panel-header-left">
-
-                            <div class="panel-icon">
-                                🚀
-                            </div>
-
-                            <div>
-                                <h3>Recommended Actions</h3>
-
-                                <p>
-                                    AI suggestions for improvement
-                                </p>
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <div
-                        class="action-list"
-                        id="studentRecommendedActions">
-
-                        <div class="empty-feedback">
-                            Recommended actions will appear here.
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            <!-- =========================
-                 RISK FACTORS
-            ========================== -->
-            <section class="dashboard-panel full-width-panel">
-
-                <div class="panel-header">
-
-                    <div class="panel-header-left">
-
-                        <div class="panel-icon">
-                            ⚠️
-                        </div>
-
-                        <div>
-                            <h3>Risk Factors</h3>
-
-                            <p>
-                                Areas that may affect your academic success
-                            </p>
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <div
-                    class="risk-reasons"
-                    id="studentRiskReasons">
-
-                    <div class="no-risk-message">
-                        No major risk factors identified.
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            <!-- =========================
-                 FACULTY NOTES
-            ========================== -->
-            <section
-                class="dashboard-panel full-width-panel"
-                id="studentFacultyNotesSection">
-
-                <div class="panel-header">
-
-                    <div class="panel-header-left">
-
-                        <div class="panel-icon">
-                            👨‍🏫
-                        </div>
-
-                        <div>
-                            <h3>Faculty Notes & Support</h3>
-
-                            <p>
-                                Notes, instructions and resources shared
-                                specifically with you
-                            </p>
-                        </div>
-
-                    </div>
-
-                    <span
-                        class="panel-status-badge"
-                        id="studentNotesCount">
-                        0 Notes
-                    </span>
-
-                </div>
-
-
-                <div
-                    class="faculty-notes-list"
-                    id="studentFacultyNotes">
-
-                    <div class="empty-notes-state">
-
-                        <div class="empty-state-icon">
-                            📝
-                        </div>
-
-                        <h4>No faculty notes yet</h4>
-
-                        <p>
-                            Notes or resources shared by your faculty
-                            will appear here.
-                        </p>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            <!-- =========================
-                 NOTIFICATIONS
-            ========================== -->
-            <section
-                class="dashboard-panel full-width-panel"
-                id="studentNotificationsSection">
-
-                <div class="panel-header">
-
-                    <div class="panel-header-left">
-
-                        <div class="panel-icon">
+                <div class="navbar-actions">
+                    <!-- Notification Bell -->
+                    <div class="notification-bell-wrapper">
+                        <button class="bell-button" onclick="toggleNotificationDropdown()" title="Notifications">
                             🔔
+                            <span id="unreadNotifCount" class="unread-badge" style="display: none;">0</span>
+                        </button>
+                        <div id="notificationDropdown" class="notification-dropdown">
+                            <div class="notif-header">
+                                <span>My Notifications</span>
+                                <button class="btn-mark-all" onclick="markAllNotificationsRead()">Mark all read</button>
+                            </div>
+                            <div id="notificationList" class="notif-list">
+                                <div style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 0.8rem;">Loading...</div>
+                            </div>
                         </div>
-
-                        <div>
-                            <h3>Notifications</h3>
-
-                            <p>
-                                Updates from faculty and your success system
-                            </p>
-                        </div>
-
                     </div>
 
-                    <span
-                        class="panel-status-badge"
-                        id="studentNotificationCount">
-                        0 New
-                    </span>
-
+                    <button class="btn btn-secondary btn-sm" onclick="logout()">
+                        Sign Out
+                    </button>
                 </div>
+            </header>
 
-
-                <div
-                    class="student-notifications-list"
-                    id="studentNotifications">
-
-                    <div class="empty-notification-state">
-
-                        <div class="empty-state-icon">
-                            🔔
+            <div class="page-body">
+                <!-- ==========================================
+                     SECTION 1: DASHBOARD
+                     ========================================== -->
+                <div id="sec-student-dashboard" class="page-section">
+                    <!-- KPI Cards Grid -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Cumulative GPA</span>
+                                <div class="stat-icon icon-purple">🎓</div>
+                            </div>
+                            <div id="studentCgpa" class="stat-value">0.00</div>
+                            <div id="studentCgpaDiff" class="stat-desc">Trajectory vs previous sem</div>
                         </div>
 
-                        <h4>No notifications</h4>
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Class Attendance</span>
+                                <div class="stat-icon icon-blue">📅</div>
+                            </div>
+                            <div id="studentAttendance" class="stat-value">0%</div>
+                            <div id="attendanceStatus" class="stat-desc">Target: 75% minimum</div>
+                        </div>
 
-                        <p>
-                            New intervention updates, faculty messages
-                            and reports will appear here.
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Success Score</span>
+                                <div class="stat-icon icon-green">⚡</div>
+                            </div>
+                            <div id="studentSuccessScore" class="stat-value">0/100</div>
+                            <div class="stat-desc">Composite readiness index</div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Assignments</span>
+                                <div class="stat-icon icon-blue">📝</div>
+                            </div>
+                            <div id="studentAssignmentRate" class="stat-value">0%</div>
+                            <div class="stat-desc">LMS submission rate</div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <span class="stat-label">Academic Risk Status</span>
+                                <div class="stat-icon icon-amber">🛡️</div>
+                            </div>
+                            <div style="margin-top: 4px;">
+                                <span id="studentRiskLevel" class="badge badge-low-risk">Evaluating...</span>
+                            </div>
+                            <div class="stat-desc">AI Early-Warning Tier</div>
+                        </div>
+                    </div>
+
+                    <!-- AI Root Cause Explanation Box -->
+                    <div class="card" style="margin-top: 24px;">
+                        <div class="card-header">
+                            <div>
+                                <h3 class="card-title">AI Performance Diagnosis</h3>
+                                <p class="card-subtitle">Personalized early warning factors and academic standing</p>
+                            </div>
+                        </div>
+                        <div id="studentAiExplanation" class="ai-box">
+                            Evaluating performance metrics...
+                        </div>
+                        <div style="margin-top: 14px;">
+                            <strong style="font-size: 0.8rem; color: var(--navy);">Identified Risk Indicators:</strong>
+                            <div id="studentRiskFactors" style="margin-top: 6px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Visual Charts -->
+                    <div class="charts-row" style="margin-top: 24px;">
+                        <div class="card chart-card">
+                            <div class="card-header">
+                                <div>
+                                    <h3 class="card-title">CGPA Progression & Attendance</h3>
+                                    <p class="card-subtitle">Semester-wise historical trajectory</p>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="studentProgressionChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="card chart-card">
+                            <div class="card-header">
+                                <div>
+                                    <h3 class="card-title">Coursework Performance</h3>
+                                    <p class="card-subtitle">Department subject evaluations (out of 100)</p>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="studentSubjectChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Semester Timeline Progression -->
+                    <div class="card" style="margin-top: 24px;">
+                        <div class="card-header">
+                            <h3 class="card-title">Semester Progression Log</h3>
+                        </div>
+                        <div id="semesterTimelineList" class="timeline-container"></div>
+                    </div>
+                </div>
+
+                <!-- ==========================================
+                     SECTION 2: MY PERFORMANCE
+                     ========================================== -->
+                <div id="sec-student-performance" class="page-section" style="display: none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h3 class="card-title">Academic Standing Details</h3>
+                                <p class="card-subtitle">Comprehensive breakdown of scores and laboratory practicals</p>
+                            </div>
+                        </div>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
+                            Review your course evaluations and continuous assessments on the primary dashboard.
                         </p>
-
                     </div>
-
                 </div>
 
-            </section>
-
-
-            <!-- =========================
-                 INTERVENTION TIMELINE
-            ========================== -->
-            <section
-                class="dashboard-panel full-width-panel"
-                id="studentInterventionTimelineSection">
-
-                <div class="panel-header">
-
-                    <div class="panel-header-left">
-
-                        <div class="panel-icon">
-                            🕒
+                <!-- ==========================================
+                     SECTION 3: ACADEMIC GOALS
+                     ========================================== -->
+                <div id="sec-student-goals" class="page-section" style="display: none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h3 class="card-title">My Academic Goals & Milestones</h3>
+                                <p class="card-subtitle">Set goals and monitor your personal progress</p>
+                            </div>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="openCreateGoalModal()">
+                                + Create New Goal
+                            </button>
                         </div>
-
-                        <div>
-                            <h3>Intervention Timeline</h3>
-
-                            <p>
-                                Follow your journey from risk detection
-                                to improvement
-                            </p>
-                        </div>
-
+                        <div id="studentGoalsList" class="goals-grid"></div>
                     </div>
-
                 </div>
 
-
-                <div
-                    class="intervention-timeline"
-                    id="studentInterventionTimeline">
-
-                    <div class="timeline-empty">
-
-                        <div class="empty-state-icon">
-                            🕒
+                <!-- ==========================================
+                     SECTION 4: FACULTY ADVISORIES & INTERVENTIONS
+                     ========================================== -->
+                <div id="sec-student-interventions" class="page-section" style="display: none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h3 class="card-title">Faculty Advisories & Interventions</h3>
+                                <p class="card-subtitle">Mentoring guidance and action items assigned by faculty</p>
+                            </div>
                         </div>
-
-                        <h4>No intervention history</h4>
-
-                        <p>
-                            Your intervention journey will appear here
-                            when faculty assigns support.
-                        </p>
-
+                        <div id="studentInterventionsList" class="interventions-list"></div>
                     </div>
-
                 </div>
 
-            </section>
-
-
-            <!-- =========================
-                 FACULTY FEEDBACK
-            ========================== -->
-            <section class="dashboard-panel full-width-panel">
-
-                <div class="panel-header">
-
-                    <div class="panel-header-left">
-
-                        <div class="panel-icon">
-                            💬
+                <!-- ==========================================
+                     SECTION 5: MENTOR CHAT
+                     ========================================== -->
+                <div id="sec-student-messages" class="page-section" style="display: none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h3 class="card-title">Communication with Faculty Advisor</h3>
+                                <p class="card-subtitle">Direct messages and mentoring thread</p>
+                            </div>
                         </div>
-
-                        <div>
-                            <h3>Faculty Feedback</h3>
-
-                            <p>
-                                Feedback provided by your faculty
-                            </p>
-                        </div>
-
+                        <div id="studentChatThread" class="message-thread" style="max-height: 340px; margin-bottom: 12px;"></div>
+                        <form onsubmit="sendMessageToFaculty(event)" style="display: flex; gap: 8px;">
+                            <input type="text" id="studentMessageInput" class="form-control" placeholder="Write a message to your faculty mentor..." required style="flex: 1;">
+                            <button type="submit" class="btn btn-primary">Send Message</button>
+                        </form>
                     </div>
-
                 </div>
 
-
-                <div
-                    class="feedback-box"
-                    id="studentFacultyFeedback">
-
-                    <div class="empty-feedback">
-                        No faculty feedback available yet.
+                <!-- ==========================================
+                     SECTION 6: RECOMMENDATIONS
+                     ========================================== -->
+                <div id="sec-student-recommendations" class="page-section" style="display: none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h3 class="card-title">Personalized AI Action Plan</h3>
+                                <p class="card-subtitle">Recommended steps to optimize GPA and career placement readiness</p>
+                            </div>
+                        </div>
+                        <div id="studentRecommendations" class="rec-grid"></div>
                     </div>
-
                 </div>
 
-            </section>
-
-
-            <!-- =========================
-                 SATISFACTION
-            ========================== -->
-            <section class="dashboard-panel full-width-panel">
-
-                <div class="panel-header">
-
-                    <div class="panel-header-left">
-
-                        <div class="panel-icon">
-                            ⭐
+                <!-- ==========================================
+                     SECTION 7: STUDY MATERIALS & FACULTY NOTES
+                     ========================================== -->
+                <div id="sec-student-materials" class="page-section" style="display: none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <h3 class="card-title">Study Materials & Faculty Notes</h3>
+                                <p class="card-subtitle">Official lecture slides, problem sheets, and study materials published by your professors</p>
+                            </div>
                         </div>
 
-                        <div>
-                            <h3>Student Satisfaction</h3>
-
-                            <p>
-                                Your current satisfaction and faculty support
-                            </p>
+                        <!-- Toolbar -->
+                        <div class="table-toolbar" style="margin-top: 14px;">
+                            <div class="search-box">
+                                <span class="search-icon">🔍</span>
+                                <input type="text" id="studentNotesSearchInput" class="search-input" placeholder="Search by title, subject, or professor..." oninput="filterStudentMaterials()">
+                            </div>
+                            <div class="filter-group">
+                                <select id="studentNotesSubjectFilter" class="select-filter" onchange="filterStudentMaterials()">
+                                    <option value="all">All Subjects</option>
+                                </select>
+                                <select id="studentNotesSortFilter" class="select-filter" onchange="filterStudentMaterials()">
+                                    <option value="desc">Newest First</option>
+                                    <option value="asc">Oldest First</option>
+                                </select>
+                            </div>
                         </div>
 
-                    </div>
-
-                </div>
-
-
-                <div class="student-metrics-grid">
-
-                    <div class="metric-card">
-                        <span>Student Satisfaction</span>
-                        <strong id="studentSatisfaction">--</strong>
-                    </div>
-
-                    <div class="metric-card">
-                        <span>Faculty Feedback Score</span>
-                        <strong id="studentFacultyFeedbackScore">--</strong>
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            <!-- =========================
-                 ACCOUNT
-            ========================== -->
-            <section class="dashboard-panel full-width-panel">
-
-                <div class="panel-header">
-
-                    <div class="panel-header-left">
-
-                        <div class="panel-icon">
-                            👤
+                        <div id="studentMaterialsGrid" class="study-materials-grid" style="margin-top: 16px;">
+                            <div style="color: var(--text-secondary); font-size: 0.85rem; padding: 16px 0;">Loading study materials...</div>
                         </div>
-
-                        <div>
-                            <h3>My Account</h3>
-
-                            <p>
-                                Your student account information
-                            </p>
-                        </div>
-
                     </div>
-
                 </div>
-
-
-                <div class="account-info">
-
-                    <div class="account-info-item">
-
-                        <span>
-                            Student Name
-                        </span>
-
-                        <strong id="accountStudentName">
-                            --
-                        </strong>
-
-                    </div>
-
-
-                    <div class="account-info-item">
-
-                        <span>
-                            Student ID
-                        </span>
-
-                        <strong id="accountStudentId">
-                            --
-                        </strong>
-
-                    </div>
-
-                </div>
-
-            </section>
-
+            </div>
         </main>
-
-
-        <!-- =========================
-             FOOTER
-        ========================== -->
-        <footer class="student-footer">
-
-            <p>
-                AI-Powered Student Analytics and Success Platform
-            </p>
-
-            <span>
-                Personalized • Data-Driven • Student-Centered
-            </span>
-
-        </footer>
-
     </div>
 
-
-    <!-- =========================================================
-         STUDENT REPLY TO FACULTY MODAL
-    ========================================================== -->
-    <div id="studentReplyModal" class="modal-overlay hidden">
-        <div class="intervention-dialog-card">
-            <div class="modal-dialog-header">
-                <div>
-                    <span class="dialog-eyebrow">TWO-WAY FACULTY INTERVENTION CONNECTION</span>
-                    <h3>Reply to Faculty Intervention</h3>
-                    <p>Send your progress update, question, or response directly to your faculty.</p>
-                </div>
-                <button type="button" class="modal-close" onclick="closeStudentReplyModal()">×</button>
+    <!-- ========================================================
+         MODAL 1: CREATE GOAL MODAL
+         ======================================================== -->
+    <div id="goalModal" class="modal-backdrop">
+        <div class="modal-box" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Create Academic Goal</h3>
+                <button type="button" class="modal-close">&times;</button>
             </div>
-
-            <form id="studentReplyForm" onsubmit="submitStudentReply(event)">
-                <input type="hidden" id="studentReplyInterventionId">
-
-                <div class="dialog-context-box">
-                    <span class="context-label">INTERVENTION</span>
-                    <strong id="studentReplyInterventionTitle">-</strong>
+            <form id="createGoalForm" onsubmit="submitGoalForm(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Goal Title</label>
+                        <input type="text" id="goalTitle" class="form-control" placeholder="e.g. Increase Attendance to 85%" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Target Date</label>
+                        <input type="date" id="goalTargetDate" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Current Progress (0 - 100%)</label>
+                        <input type="number" id="goalProgress" class="form-control" min="0" max="100" value="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Description / Action Plan</label>
+                        <textarea id="goalDescription" class="form-control" placeholder="What specific steps will you take?"></textarea>
+                    </div>
                 </div>
-
-                <div class="form-group">
-                    <label for="studentReplyStatusSelect">Your Progress / Response Status</label>
-                    <select id="studentReplyStatusSelect" required>
-                        <option value="In Progress">⏳ I am working on this (In Progress)</option>
-                        <option value="Needs Support">❓ I need extra guidance / support</option>
-                        <option value="Completed">✅ I have completed the recommended action</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="studentReplyMessage">Your Message / Explanation</label>
-                    <textarea
-                        id="studentReplyMessage"
-                        rows="4"
-                        placeholder="Write your update, questions or completed steps for faculty..."
-                        required
-                    ></textarea>
-                </div>
-
-                <div id="studentReplyStatusMsg" class="report-message hidden"></div>
-
-                <div class="modal-dialog-actions">
-                    <button type="button" class="secondary-button" onclick="closeStudentReplyModal()">
-                        Cancel
-                    </button>
-                    <button type="submit" class="primary-button">
-                        Send Message to Faculty
-                    </button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm modal-close">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Save Goal</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- ========================================================
+         MODAL 2: RESPOND TO INTERVENTION MODAL
+         ======================================================== -->
+    <div id="respondModal" class="modal-backdrop">
+        <div class="modal-box" style="max-width: 500px;">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title">Reply to Advisory</h3>
+                    <span id="respondIntTitle" style="font-size: 0.78rem; color: var(--text-secondary);">Intervention</span>
+                </div>
+                <button type="button" class="modal-close">&times;</button>
+            </div>
+            <form id="respondForm" onsubmit="submitInterventionResponse(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Your Response / Proposed Action Plan</label>
+                        <textarea id="responseText" class="form-control" placeholder="Explain your action steps (e.g. 'I will meet during office hours on Friday and attend extra tutoring')..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm modal-close">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Send Response to Mentor</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-    <!-- =========================
-         AUTH + STUDENT JAVASCRIPT
-    ========================== -->
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
 
-    <script src="/auth-guard.js"></script>
-    <script src="/student.js"></script>
+    <!-- ========================================================
+         FLOATING AI TRIGGER BUTTON
+         ======================================================== -->
+    <button id="aiFloatingTrigger" class="ai-floating-trigger" onclick="openAiModal()" title="Ask Student Success AI">
+        <span class="ai-trigger-sparkle">✨</span>
+        <span>Student Success AI</span>
+    </button>
 
+    <!-- ========================================================
+         STUDENT SUCCESS AI MODAL (Clean High-Contrast Redesign)
+         ======================================================== -->
+    <div id="aiModalBackdrop" class="ai-modal-backdrop" onclick="handleAiBackdropClick(event)">
+        <div class="ai-modal-card" role="dialog" aria-modal="true" aria-labelledby="aiModalTitle">
+            <!-- Header -->
+            <div class="ai-modal-header">
+                <div class="ai-header-left">
+                    <div class="ai-header-avatar">✨</div>
+                    <div class="ai-header-title">
+                        <h3 id="aiModalTitle">Student Success AI</h3>
+                        <span id="aiModalSubtitle">Your intelligent academic assistant</span>
+                    </div>
+                </div>
+                <button type="button" class="ai-modal-close" onclick="closeAiModal()" aria-label="Close modal">&times;</button>
+            </div>
+
+            <!-- Quick Action Suggestion Strip -->
+            <div id="aiSuggestionsBar" class="ai-suggestions-bar"></div>
+
+            <!-- Scrollable Message Body -->
+            <div id="aiChatBody" class="ai-chat-body"></div>
+
+            <!-- Input Footer Form -->
+            <div class="ai-modal-footer">
+                <form id="aiChatForm" class="ai-input-form" onsubmit="handleAiFormSubmit(event)">
+                    <input 
+                        type="text" 
+                        id="aiChatInput" 
+                        class="ai-chat-input" 
+                        placeholder="Ask about your CGPA, attendance cutoff, risk factors, study plans..." 
+                        autocomplete="off"
+                        required
+                    >
+                    <button type="submit" id="aiSendBtn" class="ai-send-btn">
+                        <span>Send</span>
+                        <span>➤</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/student.js"></script>
+    <script src="/js/ai-modal.js"></script>
 </body>
 </html>

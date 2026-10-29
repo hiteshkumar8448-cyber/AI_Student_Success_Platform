@@ -1,261 +1,157 @@
+/**
+ * AI Student Success Platform — University Login Controller
+ */
 
-// ============================================================
-// AI STUDENT SUCCESS PLATFORM
-// Login JavaScript - Reliable Form Submission
-// ============================================================
-
-"use strict";
-
-let currentRole = "student";
-let loginInProgress = false;
-
-const AUTH_TOKEN_KEY = "auth_token";
-const USER_ROLE_KEY = "user_role";
-
-function getElement(id) {
-    return document.getElementById(id);
-}
-
-// ------------------------------------------------------------
-// SESSION
-// ------------------------------------------------------------
-
-function clearSession() {
-    [
-        AUTH_TOKEN_KEY,
-        USER_ROLE_KEY,
-        "user_id",
-        "user_name",
-        "student_id",
-        "faculty_id"
-    ].forEach(key => sessionStorage.removeItem(key));
-}
-
-// ------------------------------------------------------------
-// MESSAGES
-// ------------------------------------------------------------
-
-function showMessage(message, type = "error") {
-    const element = getElement("loginMessage");
-
-    if (!element) {
-        console.error("Missing HTML element: loginMessage");
-        alert(message);
-        return;
-    }
-
-    element.textContent = String(message);
-    element.classList.remove("hidden", "error", "success");
-    element.classList.add(type);
-}
-
-function clearMessage() {
-    const element = getElement("loginMessage");
-
-    if (!element) return;
-
-    element.textContent = "";
-    element.classList.add("hidden");
-    element.classList.remove("error", "success");
-}
-
-// ------------------------------------------------------------
-// ROLE SWITCHING
-// ------------------------------------------------------------
+// Global role tracker
+var currentRole = "student";
 
 function setRole(role) {
-    currentRole = role === "faculty" ? "faculty" : "student";
+    currentRole = (role === "faculty") ? "faculty" : "student";
+    const isStudent = (currentRole === "student");
 
-    const isStudent = currentRole === "student";
+    // Update segmented control buttons
+    const studentTab = document.getElementById("tabStudent");
+    const facultyTab = document.getElementById("tabFaculty");
 
-    const studentButton = getElement("studentRoleButton");
-    const facultyButton = getElement("facultyRoleButton");
-    const studentGroup = getElement("studentIdGroup");
-    const facultyGroup = getElement("facultyIdGroup");
-    const studentInput = getElement("studentId");
-    const facultyInput = getElement("facultyId");
-    const passwordInput = getElement("password");
-    const passwordHint = getElement("passwordHint");
-    const loginButtonText = getElement("loginButtonText");
-    const studentDemo = getElement("studentDemoBox");
-    const facultyDemo = getElement("facultyDemoBox");
-
-    studentButton?.classList.toggle("active", isStudent);
-    facultyButton?.classList.toggle("active", !isStudent);
-
-    studentGroup?.classList.toggle("hidden", !isStudent);
-    facultyGroup?.classList.toggle("hidden", isStudent);
-
-    if (studentInput) {
-        studentInput.required = isStudent;
-        studentInput.disabled = !isStudent;
+    if (studentTab) {
+        studentTab.classList.toggle("active", isStudent);
+        studentTab.setAttribute("aria-selected", isStudent ? "true" : "false");
+    }
+    if (facultyTab) {
+        facultyTab.classList.toggle("active", !isStudent);
+        facultyTab.setAttribute("aria-selected", !isStudent ? "true" : "false");
     }
 
-    if (facultyInput) {
-        facultyInput.required = !isStudent;
-        facultyInput.disabled = isStudent;
+    // Toggle by data-role as well
+    document.querySelectorAll(".role-tab-btn").forEach(btn => {
+        const isMatch = btn.getAttribute("data-role") === currentRole;
+        btn.classList.toggle("active", isMatch);
+        btn.setAttribute("aria-selected", isMatch ? "true" : "false");
+    });
+
+    // Form inputs and hints
+    const studentGroup = document.getElementById("studentIdGroup");
+    const facultyGroup = document.getElementById("facultyIdGroup");
+    const studentInput = document.getElementById("studentId");
+    const facultyInput = document.getElementById("facultyId");
+    const loginIdInput = document.getElementById("loginId");
+    const passwordInput = document.getElementById("password");
+    const passwordHint = document.getElementById("passwordHint");
+    const submitBtnText = document.getElementById("submitBtnText");
+    const studentDemo = document.getElementById("studentDemoBox");
+    const facultyDemo = document.getElementById("facultyDemoBox");
+
+    if (isStudent) {
+        if (studentGroup) studentGroup.style.display = "block";
+        if (facultyGroup) facultyGroup.style.display = "none";
+        if (facultyInput) facultyInput.value = "";
+        if (studentInput) {
+            if (loginIdInput) loginIdInput.value = studentInput.value;
+            setTimeout(() => studentInput.focus(), 50);
+        }
+        if (submitBtnText) submitBtnText.textContent = "Sign in as Student";
+        if (passwordHint) passwordHint.textContent = "Default student password is your Student ID";
+        if (studentDemo) studentDemo.style.display = "block";
+        if (facultyDemo) facultyDemo.style.display = "none";
+    } else {
+        if (studentGroup) studentGroup.style.display = "none";
+        if (facultyGroup) facultyGroup.style.display = "block";
+        if (studentInput) studentInput.value = "";
+        if (facultyInput) {
+            if (loginIdInput) loginIdInput.value = facultyInput.value;
+            setTimeout(() => facultyInput.focus(), 50);
+        }
+        if (submitBtnText) submitBtnText.textContent = "Sign in as Faculty";
+        if (passwordHint) passwordHint.textContent = "Default faculty password is your Faculty ID";
+        if (studentDemo) studentDemo.style.display = "none";
+        if (facultyDemo) facultyDemo.style.display = "block";
     }
 
     if (passwordInput) passwordInput.value = "";
-
-    if (passwordHint) {
-        passwordHint.textContent = isStudent ? "Student ID" : "Faculty ID";
-    }
-
-    if (loginButtonText) {
-        loginButtonText.textContent = isStudent
-            ? "Sign in as Student"
-            : "Sign in as Faculty";
-    }
-
-    studentDemo?.classList.toggle("hidden", !isStudent);
-    facultyDemo?.classList.toggle("hidden", isStudent);
-
     clearMessage();
 }
 
-function setupRoleButtons() {
-    getElement("studentRoleButton")?.addEventListener("click", event => {
-        event.preventDefault();
-        setRole("student");
-    });
+// Expose setRole globally for immediate onclick availability
+window.setRole = setRole;
 
-    getElement("facultyRoleButton")?.addEventListener("click", event => {
-        event.preventDefault();
-        setRole("faculty");
-    });
+window.quickFill = function (id, pwd) {
+    const isStudent = (currentRole === "student");
+    const targetInput = isStudent
+        ? document.getElementById("studentId")
+        : document.getElementById("facultyId");
+
+    if (targetInput) targetInput.value = id;
+    const loginId = document.getElementById("loginId");
+    if (loginId) loginId.value = id;
+
+    const pwdEl = document.getElementById("password");
+    if (pwdEl) pwdEl.value = pwd;
+    clearMessage();
+};
+
+function showMessage(msg, type = "error") {
+    const el = document.getElementById("loginMessage");
+    if (!el) return;
+    el.textContent = msg;
+    el.className = `login-message ${type}`;
+    el.style.display = "block";
 }
 
-// ------------------------------------------------------------
-// PASSWORD VISIBILITY
-// ------------------------------------------------------------
-
-function setupPasswordToggle() {
-    const button = getElement("togglePassword");
-    const input = getElement("password");
-
-    if (!button || !input) return;
-
-    button.addEventListener("click", event => {
-        event.preventDefault();
-
-        const showPassword = input.type === "password";
-        input.type = showPassword ? "text" : "password";
-
-        button.textContent = showPassword ? "🙈" : "👁";
-        button.setAttribute(
-            "aria-label",
-            showPassword ? "Hide password" : "Show password"
-        );
-    });
+function clearMessage() {
+    const el = document.getElementById("loginMessage");
+    if (!el) return;
+    el.className = "login-message";
+    el.style.display = "none";
+    el.textContent = "";
 }
 
-// ------------------------------------------------------------
-// LOADING STATE
-// ------------------------------------------------------------
-
-function setLoading(isLoading) {
-    const button = getElement("loginButton");
-    const buttonText = getElement("loginButtonText");
-    const arrow = getElement("loginButtonArrow");
-
-    if (button) button.disabled = isLoading;
-
-    if (buttonText) {
-        buttonText.textContent = isLoading
-            ? "Signing in..."
-            : currentRole === "student"
-                ? "Sign in as Student"
-                : "Sign in as Faculty";
+async function performLogin(e) {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
     }
-
-    if (arrow) arrow.textContent = isLoading ? "..." : "→";
-}
-
-// ------------------------------------------------------------
-// SAVE SESSION
-// ------------------------------------------------------------
-
-function saveSession(data) {
-    const token = data?.token || data?.access_token || data?.auth_token;
-
-    if (!token) {
-        throw new Error(
-            "Login response contains no authentication token."
-        );
-    }
-
-    const isStudent = currentRole === "student";
-    const user = isStudent
-        ? (data.student || data)
-        : (data.faculty || data);
-
-    const id = isStudent
-        ? (user.student_id || user.user_id || data.student_id || data.user_id)
-        : (user.faculty_id || user.user_id || data.faculty_id || data.user_id);
-
-    const name = user.name || user.full_name || user.username;
-
-    sessionStorage.setItem("auth_token", token);
-    sessionStorage.setItem("user_role", currentRole);
-
-    if (id) {
-        sessionStorage.setItem("user_id", String(id));
-        sessionStorage.setItem(
-            isStudent ? "student_id" : "faculty_id",
-            String(id)
-        );
-    }
-
-    if (name) {
-        sessionStorage.setItem("user_name", String(name));
-    }
-}
-
-// ------------------------------------------------------------
-// LOGIN REQUEST
-// ------------------------------------------------------------
-
-async function performLogin() {
-    if (loginInProgress) return;
-
     clearMessage();
 
-    const isStudent = currentRole === "student";
-    const idInput = getElement(isStudent ? "studentId" : "facultyId");
-    const passwordInput = getElement("password");
+    const isStudent = (currentRole === "student");
+    const studentInput = document.getElementById("studentId");
+    const facultyInput = document.getElementById("facultyId");
+    const fallbackInput = document.getElementById("loginId");
+    const pwdInput = document.getElementById("password");
+    const submitBtn = document.getElementById("submitBtn");
+    const submitBtnText = document.getElementById("submitBtnText");
 
-    const accountId = idInput?.value.trim().toUpperCase() || "";
-    const password = passwordInput?.value || "";
+    const rawId = isStudent
+        ? (studentInput?.value || fallbackInput?.value || "")
+        : (facultyInput?.value || fallbackInput?.value || "");
 
-    if (!accountId) {
+    const id = rawId.trim().toUpperCase();
+    const password = pwdInput ? pwdInput.value.trim() : "";
+
+    if (!id) {
         showMessage(`Please enter your ${isStudent ? "Student" : "Faculty"} ID.`);
-        idInput?.focus();
+        if (isStudent && studentInput) studentInput.focus();
+        else if (!isStudent && facultyInput) facultyInput.focus();
         return;
     }
-
-    if (!password.trim()) {
+    if (!password) {
         showMessage("Please enter your password.");
-        passwordInput?.focus();
+        if (pwdInput) pwdInput.focus();
         return;
     }
 
-    const endpoint = isStudent
-        ? "/api/student/login"
-        : "/api/faculty/login";
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        if (submitBtnText) submitBtnText.textContent = "Authenticating...";
+    }
 
+    // Determine endpoint and payload
+    const endpoint = isStudent ? "/api/student/login" : "/api/faculty/login";
     const payload = isStudent
-        ? { student_id: accountId, password }
-        : { faculty_id: accountId, password };
-
-    loginInProgress = true;
-    setLoading(true);
-
-    // This log confirms that the button reached the login handler.
-    console.log("Submitting login request:", endpoint);
+        ? { student_id: id, password: password }
+        : { faculty_id: id, password: password };
 
     try {
-        const response = await fetch(endpoint, {
+        const res = await fetch(endpoint, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -264,104 +160,115 @@ async function performLogin() {
             body: JSON.stringify(payload)
         });
 
-        const responseText = await response.text();
-        let data = {};
+        if (!res.ok) {
+            if (res.status === 401) {
+                throw new Error(isStudent ? "Invalid Student ID or password" : "Invalid Faculty ID or password");
+            } else if (res.status >= 500) {
+                throw new Error("Server unavailable. Please try again later.");
+            }
+            const errData = await res.json().catch(() => ({ detail: "Login failed. Please check credentials." }));
+            throw new Error(errData.detail || errData.message || "Login failed. Please check credentials.");
+        }
 
-        if (responseText) {
-            try {
-                data = JSON.parse(responseText);
-            } catch {
-                throw new Error(
-                    `Unexpected server response (HTTP ${response.status}).`
-                );
+        const data = await res.json();
+        const token = data.token || data.access_token;
+        if (!token) {
+            throw new Error("No security token returned by the server.");
+        }
+
+        // Clean any old session leftovers to avoid role cross-contamination
+        const keysToClean = [
+            "auth_token", "user_role", "user_id", "user_name",
+            "student_id", "faculty_id", "student_token", "studentToken",
+            "faculty_token", "facultyToken"
+        ];
+        keysToClean.forEach(k => {
+            sessionStorage.removeItem(k);
+            localStorage.removeItem(k);
+        });
+
+        const verifiedRole = (data.role || currentRole).toLowerCase();
+        const userId = data.user_id || id;
+
+        // Store active session credentials
+        sessionStorage.setItem("auth_token", token);
+        sessionStorage.setItem("user_role", verifiedRole);
+        sessionStorage.setItem("user_id", userId);
+
+        localStorage.setItem("auth_token", token);
+        localStorage.setItem("user_role", verifiedRole);
+        localStorage.setItem("user_id", userId);
+
+        if (verifiedRole === "student") {
+            sessionStorage.setItem("student_id", userId);
+            localStorage.setItem("student_token", token);
+            localStorage.setItem("studentToken", token);
+            if (data.student?.name) {
+                sessionStorage.setItem("user_name", data.student.name);
+                localStorage.setItem("user_name", data.student.name);
+            }
+        } else {
+            sessionStorage.setItem("faculty_id", userId);
+            localStorage.setItem("faculty_token", token);
+            localStorage.setItem("facultyToken", token);
+            if (data.faculty?.name) {
+                sessionStorage.setItem("user_name", data.faculty.name);
+                localStorage.setItem("user_name", data.faculty.name);
             }
         }
 
-        if (!response.ok) {
-            const detail = data.detail || data.message || data.error;
+        // Set session cookie
+        document.cookie = `auth_token=${token}; path=/; max-age=28800; SameSite=Lax`;
 
-            throw new Error(
-                typeof detail === "string"
-                    ? detail
-                    : `Login failed (HTTP ${response.status}).`
-            );
+        showMessage("Login successful! Redirecting...", "success");
+
+        const destination = (verifiedRole === "faculty") ? "/faculty.html" : "/student.html";
+        setTimeout(() => {
+            window.location.replace(destination);
+        }, 180);
+
+    } catch (err) {
+        console.error("Login attempt failed:", err);
+        const msg = (err.name === "TypeError" || String(err).includes("fetch"))
+            ? "Server unavailable. Please check backend connection."
+            : (err.message || "Login failed. Please try again.");
+        showMessage(msg, "error");
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            if (submitBtnText) {
+                submitBtnText.textContent = isStudent ? "Sign in as Student" : "Sign in as Faculty";
+            }
         }
-
-        saveSession(data);
-
-        showMessage("Login successful. Opening your dashboard...", "success");
-
-        window.location.assign(isStudent ? "/student.html" : "/");
-
-    } catch (error) {
-        console.error("Login error:", error);
-
-        clearSession();
-        showMessage(error.message || "Unable to sign in. Please try again.");
-
-    } finally {
-        loginInProgress = false;
-        setLoading(false);
     }
 }
 
-// ------------------------------------------------------------
-// FORM SUBMISSION AND BUTTON CLICK
-// ------------------------------------------------------------
+// Backward compatibility alias
+var handleLogin = performLogin;
+window.performLogin = performLogin;
+window.handleLogin = performLogin;
 
-function setupLoginForm() {
-    const form = getElement("loginForm");
-    const button = getElement("loginButton");
-
-    if (!form) {
-        console.error("Login form not found: #loginForm");
-        showMessage("Login form could not be initialized. Please refresh the page.");
-        return;
-    }
-
-    // Prevent native navigation and handle normal form submission.
-    form.addEventListener("submit", event => {
-        event.preventDefault();
-        console.log("Login form submit event fired.");
-        performLogin();
+// Initialize when DOM is ready or immediately if already loaded
+function initLogin() {
+    // Attach click listeners to role tabs
+    document.querySelectorAll(".role-tab-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            const r = btn.getAttribute("data-role");
+            if (r) setRole(r);
+        });
     });
 
-    // Fallback for clicks if the form submit event is not triggered.
-    if (button) {
-        button.addEventListener("click", event => {
-            event.preventDefault();
-            console.log("Login button click event fired.");
-            performLogin();
-        });
-
-        // Ensure the button has the correct form behavior.
-        button.type = "button";
-    } else {
-        console.error("Login button not found: #loginButton");
+    const form = document.getElementById("loginForm");
+    if (form) {
+        form.addEventListener("submit", performLogin);
     }
 
-    console.log("Login form handlers initialized.");
-}
-
-// ------------------------------------------------------------
-// INITIALIZATION
-// ------------------------------------------------------------
-
-function initializeLoginPage() {
-    console.log("Login JavaScript loaded.");
-
-    setupRoleButtons();
-    setupPasswordToggle();
-    setupLoginForm();
+    // Default to student
     setRole("student");
-
-    console.log("Login page initialized.");
 }
 
 if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initializeLoginPage, {
-        once: true
-    });
+    document.addEventListener("DOMContentLoaded", initLogin);
 } else {
-    initializeLoginPage();
+    initLogin();
 }

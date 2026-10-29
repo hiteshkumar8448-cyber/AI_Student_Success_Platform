@@ -1,420 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>AI Student Success Platform - Login</title>
-
-    <link
-        rel="stylesheet"
-        href="/login.css?v=3"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Student Success Platform — University Login</title>
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/login.css">
 </head>
-
 <body>
-
-    <div class="login-app">
-
-        <!-- =====================================================
-             LEFT BRAND PANEL
-        ====================================================== -->
-
-        <section class="login-brand-panel">
-
-            <div class="brand-header">
-
-                <div class="brand-logo">
-                    🎓
-                </div>
-
-                <div>
-                    <h1>
-                        AI Student Success
-                    </h1>
-
-                    <p>
-                        Intelligent Academic Support
-                    </p>
-                </div>
-
+    <div class="login-wrapper">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-logo">🎓</div>
+                <h1 class="login-title">Student Success AI</h1>
+                <p class="login-subtitle">Intelligent Academic Analytics & Early-Warning Platform</p>
             </div>
 
-
-            <div class="brand-content">
-
-                <span class="brand-eyebrow">
-                    AI-POWERED EDUCATION
-                </span>
-
-                <h2>
-                    Understand your
-                    <span>academic journey.</span>
-                </h2>
-
-                <p>
-                    Your personalized student success platform
-                    helps you understand your performance,
-                    identify improvement areas, and build a
-                    stronger academic and career future.
-                </p>
-
-
-                <div class="brand-features">
-
-                    <div class="brand-feature">
-
-                        <div class="feature-icon">
-                            📊
-                        </div>
-
-                        <div>
-                            <strong>
-                                Smart Analytics
-                            </strong>
-
-                            <span>
-                                Understand your academic
-                                performance with AI-powered insights.
-                            </span>
-                        </div>
-
-                    </div>
-
-
-                    <div class="brand-feature">
-
-                        <div class="feature-icon">
-                            🎯
-                        </div>
-
-                        <div>
-                            <strong>
-                                Personalized Guidance
-                            </strong>
-
-                            <span>
-                                Get recommendations based on
-                                your individual performance.
-                            </span>
-                        </div>
-
-                    </div>
-
-
-                    <div class="brand-feature">
-
-                        <div class="feature-icon">
-                            🚀
-                        </div>
-
-                        <div>
-                            <strong>
-                                Career Readiness
-                            </strong>
-
-                            <span>
-                                Track placement skills and
-                                prepare for your future career.
-                            </span>
-                        </div>
-
-                    </div>
-
-                </div>
-
+            <!-- Role Selector Tabs -->
+            <div class="role-tabs" role="tablist" aria-label="Login Role Selection">
+                <button type="button" class="role-tab-btn active" data-role="student" id="tabStudent" role="tab" aria-selected="true" onclick="setRole('student')">
+                    <span>👨‍🎓</span> Student Portal
+                </button>
+                <button type="button" class="role-tab-btn" data-role="faculty" id="tabFaculty" role="tab" aria-selected="false" onclick="setRole('faculty')">
+                    <span>👩‍🏫</span> Faculty Portal
+                </button>
             </div>
 
+            <!-- Message Banner -->
+            <div id="loginMessage" class="login-message" role="alert" aria-live="polite"></div>
 
-            <div class="brand-footer">
-                AI Student Success Platform
-            </div>
-
-        </section>
-
-
-        <!-- =====================================================
-             LOGIN FORM PANEL
-        ====================================================== -->
-
-        <section class="login-form-panel">
-
-            <div class="login-card">
-
-                <div class="login-card-icon">
-                    🔐
+            <!-- Login Form -->
+            <form id="loginForm" class="login-form" novalidate>
+                <!-- Student ID Input Group (Active for student) -->
+                <div class="form-group" id="studentIdGroup">
+                    <label class="form-label" for="studentId">Student ID</label>
+                    <input type="text" id="studentId" name="student_id" class="form-control" placeholder="e.g. STU1001" autocomplete="username">
                 </div>
 
-                <h2>
-                    Welcome back
-                </h2>
-
-                <p class="login-description">
-                    Sign in to access your personalized
-                    academic success dashboard.
-                </p>
-
-
-                <!-- =================================================
-                     ROLE SELECTOR
-                ================================================== -->
-
-                <div class="role-selector">
-
-                    <button
-                        type="button"
-                        class="role-button active"
-                        data-role="student"
-                        id="studentRoleButton"
-                    >
-                        <span class="role-icon">
-                            🎓
-                        </span>
-
-                        <span>
-                            Student
-                        </span>
-                    </button>
-
-
-                    <button
-                        type="button"
-                        class="role-button"
-                        data-role="faculty"
-                        id="facultyRoleButton"
-                    >
-                        <span class="role-icon">
-                            👨‍🏫
-                        </span>
-
-                        <span>
-                            Faculty
-                        </span>
-                    </button>
-
+                <!-- Faculty ID Input Group (Active for faculty) -->
+                <div class="form-group" id="facultyIdGroup" style="display: none;">
+                    <label class="form-label" for="facultyId">Faculty ID</label>
+                    <input type="text" id="facultyId" name="faculty_id" class="form-control" placeholder="e.g. FACULTY001" autocomplete="username">
                 </div>
 
+                <!-- Hidden fallback ID element to ensure compatibility -->
+                <input type="hidden" id="loginId" value="">
 
-                <!-- =================================================
-                     LOGIN FORM
-                ================================================== -->
+                <!-- Password Input Group -->
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" required autocomplete="current-password">
+                    <small id="passwordHint" style="font-size: 0.72rem; color: var(--text-muted); margin-top: 4px;">
+                        Default student password is your Student ID
+                    </small>
+                </div>
 
-                <form
-                    id="loginForm"
-                    class="login-form"
-                    novalidate
-                >
+                <!-- Submit Button -->
+                <button type="submit" id="submitBtn" class="btn btn-primary btn-submit">
+                    <span id="submitBtnText">Login as Student</span>
+                </button>
+            </form>
 
-                    <!-- Student ID -->
-
-                    <div
-                        class="form-group"
-                        id="studentIdGroup"
-                    >
-
-                        <label for="studentId">
-                            Student ID
-                        </label>
-
-                        <input
-                            type="text"
-                            id="studentId"
-                            name="studentId"
-                            class="form-input"
-                            placeholder="Enter your Student ID"
-                            autocomplete="username"
-                        >
-
-                    </div>
-
-
-                    <!-- Faculty ID -->
-
-                    <div
-                        class="form-group hidden"
-                        id="facultyIdGroup"
-                    >
-
-                        <label for="facultyId">
-                            Faculty ID
-                        </label>
-
-                        <input
-                            type="text"
-                            id="facultyId"
-                            name="facultyId"
-                            class="form-input"
-                            placeholder="Enter your Faculty ID"
-                            autocomplete="username"
-                        >
-
-                    </div>
-
-
-                    <!-- Password -->
-
-                    <div class="form-group">
-
-                        <div class="label-row">
-
-                            <label for="password">
-                                Password
-                            </label>
-
-                            <span
-                                class="password-hint"
-                                id="passwordHint"
-                            >
-                                Student ID
-                            </span>
-
-                        </div>
-
-
-                        <div class="password-wrapper">
-
-                            <input
-                                type="password"
-                                id="password"
-                                name="password"
-                                class="form-input"
-                                placeholder="Enter your password"
-                                autocomplete="current-password"
-                            >
-
-                            <button
-                                type="button"
-                                class="password-toggle"
-                                id="togglePassword"
-                                aria-label="Show password"
-                            >
-                                👁
-                            </button>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- Message -->
-
-                    <div
-                        id="loginMessage"
-                        class="login-message hidden"
-                        role="alert"
-                        aria-live="polite"
-                    ></div>
-
-
-                    <!-- Login button -->
-
-                    <button
-                        type="submit"
-                        class="login-button"
-                        id="loginButton"
-                    >
-
-                        <span id="loginButtonText">
-                            Sign in as Student
-                        </span>
-
-                        <span
-                            id="loginButtonArrow"
-                            aria-hidden="true"
-                        >
-                            →
-                        </span>
-
-                    </button>
-
-                </form>
-
-
-                <!-- =================================================
-                     STUDENT DEMO
-                ================================================== -->
-
-                <div
-                    class="demo-box"
-                    id="studentDemoBox"
-                >
-
-                    <div class="demo-icon">
-                        💡
-                    </div>
-
+            <!-- Student Demo Credentials Box -->
+            <div id="studentDemoBox" class="demo-credentials-box">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
-
-                        <strong>
-                            Student login
-                        </strong>
-
-                        <p>
-                            Username: <b>STU1001</b><br>
-                            Password: <b>STU1001</b>
-                        </p>
-
+                        <strong>Demo Student Account:</strong>
+                        <div style="font-size: 0.74rem; color: var(--text-secondary); margin-top: 2px;">
+                            ID: <b>STU1001</b> &nbsp;|&nbsp; Password: <b>STU1001</b>
+                        </div>
                     </div>
-
+                    <button type="button" class="btn btn-outline btn-xs" onclick="quickFill('STU1001', 'STU1001')">
+                        Quick Fill
+                    </button>
                 </div>
-
-
-                <!-- =================================================
-                     FACULTY DEMO
-                ================================================== -->
-
-                <div
-                    class="demo-box hidden"
-                    id="facultyDemoBox"
-                >
-
-                    <div class="demo-icon">
-                        💡
-                    </div>
-
-                    <div>
-
-                        <strong>
-                            Faculty login
-                        </strong>
-
-                        <p>
-                            Username: <b>FACULTY001</b><br>
-                            Password: <b>FACULTY001</b>
-                        </p>
-
-                    </div>
-
-                </div>
-
-
-                <div class="security-note">
-
-                    <span>
-                        🔒
-                    </span>
-
-                    <p>
-                        Your session is protected and
-                        securely connected to the platform.
-                    </p>
-
-                </div>
-
             </div>
 
-        </section>
-
+            <!-- Faculty Demo Credentials Box -->
+            <div id="facultyDemoBox" class="demo-credentials-box" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>Demo Faculty Account:</strong>
+                        <div style="font-size: 0.74rem; color: var(--text-secondary); margin-top: 2px;">
+                            ID: <b>FACULTY001</b> &nbsp;|&nbsp; Password: <b>FACULTY001</b>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline btn-xs" onclick="quickFill('FACULTY001', 'FACULTY001')">
+                        Quick Fill
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
-
-    <script src="/login.js?v=4"></script>
-
+    <script src="/js/auth-guard.js"></script>
+    <script src="/js/login.js"></script>
 </body>
-
 </html>

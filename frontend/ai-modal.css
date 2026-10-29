@@ -1,0 +1,429 @@
+/* ============================================================
+   AI STUDENT SUCCESS PLATFORM — STUDENT SUCCESS AI MODAL STYLES
+   ============================================================ */
+
+/* Floating Launch Button */
+.ai-floating-trigger {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    z-index: 1050;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 22px;
+    background: linear-gradient(135deg, #1d4ed8 0%, #4338ca 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 9999px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    cursor: pointer;
+    box-shadow: 0 12px 28px -4px rgba(37, 99, 235, 0.4), 0 4px 10px -2px rgba(15, 23, 42, 0.1);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+}
+
+.ai-floating-trigger:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 16px 36px -4px rgba(37, 99, 235, 0.5), 0 6px 14px -2px rgba(15, 23, 42, 0.15);
+}
+
+.ai-floating-trigger:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.ai-trigger-sparkle {
+    font-size: 1.15rem;
+    display: inline-block;
+    animation: sparklePulse 2.5s infinite ease-in-out;
+}
+
+@keyframes sparklePulse {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(1.2) rotate(10deg); }
+}
+
+/* Modal Backdrop Overlay */
+.ai-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    z-index: 2500;
+    display: none;
+    pointer-events: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 1 !important;
+}
+
+.ai-modal-backdrop.active {
+    display: flex !important;
+    pointer-events: auto !important;
+    animation: aiFadeIn 0.2s ease-out;
+}
+
+@keyframes aiFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Solid Modal Card (Never Inherits Backdrop Opacity) */
+.ai-modal-card {
+    background: #ffffff !important;
+    opacity: 1 !important;
+    border: 1px solid #cbd5e1;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 640px;
+    height: 680px;
+    max-height: 90vh;
+    box-shadow: 0 25px 60px -12px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    transform: scale(1);
+    animation: aiCardPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes aiCardPop {
+    from { transform: scale(0.95) translateY(10px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* Modal Header */
+.ai-modal-header {
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+    color: #ffffff;
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ai-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ai-header-avatar {
+    width: 42px;
+    height: 42px;
+    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+    color: #ffffff;
+}
+
+.ai-header-title {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ai-header-title h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: -0.2px;
+    color: #ffffff;
+}
+
+.ai-header-title span {
+    font-size: 0.78rem;
+    color: #c7d2fe;
+    font-weight: 500;
+}
+
+.ai-modal-close {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.ai-modal-close:hover {
+    background: rgba(239, 68, 68, 0.9);
+    border-color: #ef4444;
+}
+
+/* Quick Action Suggestion Strip */
+.ai-suggestions-bar {
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: thin;
+}
+
+.ai-suggestion-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 9999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.ai-suggestion-chip:hover {
+    background: #eff6ff;
+    border-color: #3b82f6;
+    color: #1d4ed8;
+    transform: translateY(-1px);
+}
+
+/* Scrollable Chat Area */
+.ai-chat-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    background: #f8fafc;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Chat Bubbles */
+.ai-chat-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    max-width: 88%;
+}
+
+.ai-chat-row.user {
+    align-self: flex-end;
+    margin-left: auto;
+    flex-direction: row-reverse;
+}
+
+.ai-chat-row.assistant {
+    align-self: flex-start;
+    margin-right: auto;
+}
+
+.ai-chat-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.ai-chat-row.assistant .ai-chat-avatar {
+    background: #e0e7ff;
+    color: #4338ca;
+}
+
+.ai-chat-row.user .ai-chat-avatar {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.ai-bubble {
+    padding: 12px 16px;
+    border-radius: 14px;
+    font-size: 0.88rem;
+    line-height: 1.55;
+    word-break: break-word;
+}
+
+.ai-chat-row.user .ai-bubble {
+    background: #2563eb;
+    color: #ffffff;
+    border-top-right-radius: 4px;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.ai-chat-row.assistant .ai-bubble {
+    background: #ffffff;
+    color: #0f172a;
+    border: 1px solid #e2e8f0;
+    border-top-left-radius: 4px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+.ai-bubble h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+    color: #1e293b;
+}
+
+.ai-bubble p {
+    margin: 6px 0;
+}
+
+.ai-bubble p:first-child {
+    margin-top: 0;
+}
+
+.ai-bubble p:last-child {
+    margin-bottom: 0;
+}
+
+.ai-bubble ul, .ai-bubble ol {
+    margin: 6px 0;
+    padding-left: 18px;
+}
+
+.ai-bubble li {
+    margin: 4px 0;
+}
+
+/* Typing Indicator */
+.ai-typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 18px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    border-top-left-radius: 4px;
+    align-self: flex-start;
+}
+
+.ai-typing-dot {
+    width: 7px;
+    height: 7px;
+    background: #94a3b8;
+    border-radius: 50%;
+    animation: aiDotBounce 1.4s infinite ease-in-out;
+}
+
+.ai-typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.ai-typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes aiDotBounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+    40% { transform: scale(1.1); opacity: 1; background: #2563eb; }
+}
+
+/* Modal Footer & Input */
+.ai-modal-footer {
+    background: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    padding: 14px 18px;
+}
+
+.ai-input-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ai-chat-input {
+    flex: 1;
+    height: 44px;
+    padding: 0 16px;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    color: #0f172a;
+    background: #f8fafc;
+    transition: all 0.15s;
+    outline: none;
+}
+
+.ai-chat-input:focus {
+    border-color: #2563eb;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.ai-chat-input::placeholder {
+    color: #94a3b8;
+}
+
+.ai-send-btn {
+    height: 44px;
+    padding: 0 20px;
+    background: #2563eb;
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s;
+    user-select: none;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+.ai-send-btn:hover:not(:disabled) {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+}
+
+.ai-send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 680px) {
+    .ai-floating-trigger {
+        bottom: 20px;
+        right: 20px;
+        padding: 10px 16px;
+        font-size: 0.82rem;
+    }
+    .ai-modal-card {
+        height: 94vh;
+        max-width: calc(100vw - 20px);
+    }
+    .ai-modal-header {
+        padding: 14px 16px;
+    }
+    .ai-chat-body {
+        padding: 14px;
+    }
+    .ai-chat-row {
+        max-width: 95%;
+    }
+}

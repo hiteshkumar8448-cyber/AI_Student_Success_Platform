@@ -1,0 +1,5 @@
+Database Normalization Reference Guide:
+1NF: Atomic values
+2NF: No partial dependency
+3NF: No transitive dependency
+BCNF: Strict determinant rule

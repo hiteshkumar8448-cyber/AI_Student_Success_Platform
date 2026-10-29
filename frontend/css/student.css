@@ -1,0 +1,195 @@
+/* ============================================================
+   AI STUDENT SUCCESS PLATFORM — STUDENT DASHBOARD STYLES
+   ============================================================ */
+
+/* Goals Grid */
+.goals-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 12px;
+}
+
+.goal-card {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.15s;
+}
+
+.goal-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.goal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.goal-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--navy);
+}
+
+.goal-target {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.progress-bar-container {
+    background: var(--bg-hover);
+    height: 8px;
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-bar-fill {
+    background: var(--primary);
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width 0.3s ease;
+}
+
+.goal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+/* Interventions List on Student Dashboard */
+.interventions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.intervention-item {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-left: 5px solid var(--primary);
+    border-radius: var(--radius-md);
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: var(--shadow-sm);
+}
+
+.intervention-item.priority-critical,
+.intervention-item.priority-high {
+    border-left-color: #ef4444;
+}
+
+.intervention-item.priority-medium {
+    border-left-color: #f59e0b;
+}
+
+.intervention-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.intervention-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--navy);
+}
+
+.intervention-desc {
+    font-size: 0.85rem;
+    color: var(--navy-text);
+    line-height: 1.4;
+}
+
+.intervention-response-box {
+    background: var(--bg-main);
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 0.82rem;
+    border: 1px dashed var(--border-strong);
+}
+
+.intervention-actions {
+    display: flex;
+    gap: 10px;
+    align-self: flex-start;
+    margin-top: 4px;
+}
+
+/* Semester Timeline */
+.timeline-container {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+}
+
+.timeline-card {
+    min-width: 140px;
+    background: var(--bg-hover);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.timeline-card.current {
+    background: var(--primary-light);
+    border-color: var(--primary);
+}
+
+.timeline-sem {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.timeline-gpa {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--navy);
+}
+
+/* Recommendations grid */
+.rec-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 14px;
+}
+
+.rec-card {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.rec-icon {
+    font-size: 1.25rem;
+    color: var(--primary);
+}
+
+.rec-text {
+    font-size: 0.85rem;
+    color: var(--navy);
+    line-height: 1.4;
+}

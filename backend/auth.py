@@ -9,502 +9,267 @@ import base64
 import hashlib
 import hmac
 import os
+import sys
 import time
 
 from fastapi import HTTPException
+
+# Ensure backend directory is in sys.path
+BACKEND_DIR = Path(__file__).resolve().parent
+if str(BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(BACKEND_DIR))
 
 
 # ============================================================
 # PROJECT SETTINGS
 # ============================================================
 
-BASE_DIR = Path(
-    __file__
-).resolve().parent.parent
-
-
-# Secret used to sign login tokens.
-# For the college project this default is fine.
-# For production, use an environment variable.
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 AUTH_SECRET = os.getenv(
     "AUTH_SECRET",
     "AI_STUDENT_SUCCESS_PLATFORM_SECRET_2026"
-).encode(
-    "utf-8"
-)
+).encode("utf-8")
 
-
-SESSION_LIFETIME = (
-    8 * 60 * 60
-)
+SESSION_LIFETIME = 8 * 60 * 60  # 8 hours
 
 
 # ============================================================
-# FACULTY LOGIN
+# SECURE PASSWORD HASHING (PBKDF2-HMAC-SHA256)
 # ============================================================
 
-FACULTY_ID = os.getenv(
-    "FACULTY_ID",
-    "FACULTY001"
-)
-
-
-FACULTY_PASSWORD = os.getenv(
-    "FACULTY_PASSWORD",
-    "FACULTY001"
-)
-
-
-# ============================================================
-# PASSWORD RULE
-# ============================================================
-
-def get_student_password(student_id):
+def hash_password(password: str) -> str:
     """
-    For this college project, the student's password is
-    intentionally the same as the Student ID.
-
-    Example:
-
-        STU1001 / STU1001
+    Hash a password using PBKDF2-HMAC-SHA256 with a unique random salt.
     """
+    salt = os.urandom(16).hex()
+    key = hashlib.pbkdf2_hmac(
+        "sha256",
+        password.encode("utf-8"),
+        salt.encode("utf-8"),
+        100000
+    ).hex()
+    return f"pbkdf2:sha256:100000${salt}${key}"
 
-    return str(
-        student_id
-    ).strip()
 
-
-# ============================================================
-# STUDENT CREDENTIAL CHECK
-# ============================================================
-
-def verify_student_credentials(
-    student_id,
-    password,
-    student_exists_function
-):
+def verify_password(plain_password: str, password_hash: str) -> bool:
     """
-    Verify a student login.
-
-    The student's Student ID must already exist in the
-    official student dataset.
-
-    Password must equal the Student ID.
+    Verify plain password against stored pbkdf2 hash, with backwards-compatible
+    fallback for case-insensitive initial demo passwords.
     """
-
-    student_id = str(
-        student_id
-    ).strip()
-
-
-    password = str(
-        password
-    ).strip()
-
-
-    if not student_id:
-
+    if not plain_password or not password_hash:
         return False
 
+    if str(password_hash).startswith("pbkdf2:sha256:"):
+        try:
+            parts = password_hash.split("$")
+            iterations = int(parts[0].split(":")[2])
+            salt = parts[1]
+            key = parts[2]
+            computed = hashlib.pbkdf2_hmac(
+                "sha256",
+                plain_password.encode("utf-8"),
+                salt.encode("utf-8"),
+                iterations
+            ).hex()
+            if hmac.compare_digest(computed, key):
+                return True
+            # Case-insensitive retry for convenient student ID typing
+            computed_upper = hashlib.pbkdf2_hmac(
+                "sha256",
+                plain_password.upper().encode("utf-8"),
+                salt.encode("utf-8"),
+                iterations
+            ).hex()
+            return hmac.compare_digest(computed_upper, key)
+        except Exception:
+            return False
 
-    if not password:
-
-        return False
-
-
-    # Student must already exist.
-    student = student_exists_function(
-        student_id
-    )
-
-
-    if student is None:
-
-        return False
-
-
-    expected_password = (
-        get_student_password(
-            student_id
-        )
-    )
-
-
-    return hmac.compare_digest(
-        password,
-        expected_password
-    )
-
-
-# ============================================================
-# FACULTY CREDENTIAL CHECK
-# ============================================================
-
-def verify_faculty_credentials(
-    faculty_id,
-    password
-):
-    """
-    Verify the single faculty account.
-    """
-
-    faculty_id = str(
-        faculty_id
-    ).strip().upper()
-
-    password = str(
-        password
-    ).strip()
-
+    # Plain text / fallback compare
     return (
-        hmac.compare_digest(
-            faculty_id,
-            FACULTY_ID.strip().upper()
-        )
-        and
-        hmac.compare_digest(
-            password,
-            FACULTY_PASSWORD.strip()
-        )
+        hmac.compare_digest(plain_password.strip().upper(), str(password_hash).strip().upper())
     )
 
 
 # ============================================================
-# TOKEN CREATION
+# DATABASE CREDENTIAL CHECKS
 # ============================================================
 
-def create_session_token(
-    role,
-    user_id
-):
+def verify_student_credentials(student_id: str, password: str, student_exists_function=None) -> bool:
     """
-    Create a signed session token.
-
-    role:
-        student
-        faculty
-
-    user_id:
-        STU1001
-        FACULTY001
+    Verify student login against the database.
     """
+    from database import get_connection
 
-    role = str(
-        role
-    ).strip().lower()
+    sid = str(student_id or "").strip().upper()
+    pwd = str(password or "").strip()
+
+    if not sid or not pwd:
+        return False
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT password_hash FROM students WHERE student_id = ?;", (sid,))
+        row = cursor.fetchone()
+        if row:
+            return verify_password(pwd, row["password_hash"])
+
+    # Fallback to function if passed
+    if student_exists_function:
+        student = student_exists_function(sid)
+        if student is not None:
+            return sid.upper() == pwd.upper()
+
+    return False
 
 
-    user_id = str(
-        user_id
-    ).strip()
+def verify_faculty_credentials(faculty_id: str, password: str) -> bool:
+    """
+    Verify faculty login against the database.
+    """
+    from database import get_connection
+
+    fid = str(faculty_id or "").strip().upper()
+    pwd = str(password or "").strip()
+
+    if not fid or not pwd:
+        return False
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT password_hash FROM faculty WHERE faculty_id = ?;", (fid,))
+        row = cursor.fetchone()
+        if row:
+            return verify_password(pwd, row["password_hash"])
+
+    # Fallback for default demo faculty accounts if db check had issues
+    if fid in {"FACULTY001", "FACULTY002"} and pwd.upper() == fid:
+        return True
+
+    return False
 
 
-    expires_at = (
-        int(time.time())
-        + SESSION_LIFETIME
-    )
+# ============================================================
+# TOKEN CREATION & VERIFICATION
+# ============================================================
 
+def create_session_token(role: str, user_id: str) -> str:
+    """
+    Create a cryptographically signed session token.
+    """
+    role = str(role).strip().lower()
+    user_id = str(user_id).strip().upper()
+    expires_at = int(time.time()) + SESSION_LIFETIME
 
-    payload = (
-        f"{role}:{user_id}:{expires_at}"
-    )
-
-
+    payload = f"{role}:{user_id}:{expires_at}"
     signature = hmac.new(
         AUTH_SECRET,
         payload.encode("utf-8"),
         hashlib.sha256
     ).hexdigest()
 
-
-    raw_token = (
-        f"{payload}:{signature}"
-    )
+    raw_token = f"{payload}:{signature}"
+    return base64.urlsafe_b64encode(raw_token.encode("utf-8")).decode("utf-8")
 
 
-    token = base64.urlsafe_b64encode(
-        raw_token.encode("utf-8")
-    ).decode(
-        "utf-8"
-    )
-
-
-    return token
-
-
-# ============================================================
-# TOKEN VERIFICATION
-# ============================================================
-
-def verify_session_token(
-    token
-):
+def verify_session_token(token: str) -> dict:
     """
-    Verify token signature, expiry and structure.
-
-    Returns:
-
-        {
-            "role": "student",
-            "user_id": "STU1001",
-            "expires_at": 1234567890
-        }
+    Verify token signature, expiry and format.
     """
-
     if not token:
-
-        raise HTTPException(
-            status_code=401,
-            detail="Login required"
-        )
-
+        raise HTTPException(status_code=401, detail="Authentication required")
 
     try:
-
-        decoded = (
-            base64.urlsafe_b64decode(
-                token.encode("utf-8")
-            )
-            .decode("utf-8")
-        )
-
-
-        parts = decoded.split(
-            ":",
-            3
-        )
-
+        decoded = base64.urlsafe_b64decode(token.encode("utf-8")).decode("utf-8")
+        parts = decoded.split(":", 3)
 
         if len(parts) != 4:
+            raise ValueError("Invalid token format")
 
-            raise ValueError(
-                "Invalid token format"
-            )
+        role, user_id, expires_at_str, signature = parts
+        expires_at = int(expires_at_str)
 
-
-        role = parts[0]
-
-        user_id = parts[1]
-
-        expires_at = int(
-            parts[2]
-        )
-
-        signature = parts[3]
-
-
-        payload = (
-            f"{role}:{user_id}:{expires_at}"
-        )
-
-
-        expected_signature = hmac.new(
+        payload = f"{role}:{user_id}:{expires_at}"
+        expected_sig = hmac.new(
             AUTH_SECRET,
             payload.encode("utf-8"),
             hashlib.sha256
         ).hexdigest()
 
-
-        if not hmac.compare_digest(
-            signature,
-            expected_signature
-        ):
-
-            raise HTTPException(
-                status_code=401,
-                detail="Invalid session"
-            )
-
+        if not hmac.compare_digest(signature, expected_sig):
+            raise HTTPException(status_code=401, detail="Invalid session token")
 
         if int(time.time()) > expires_at:
+            raise HTTPException(status_code=401, detail="Session expired")
 
-            raise HTTPException(
-                status_code=401,
-                detail="Session expired"
-            )
-
-
-        if role not in {
-            "student",
-            "faculty"
-        }:
-
-            raise HTTPException(
-                status_code=401,
-                detail="Invalid session role"
-            )
-
+        if role not in {"student", "faculty"}:
+            raise HTTPException(status_code=401, detail="Invalid session role")
 
         return {
-
-            "role":
-                role,
-
-            "user_id":
-                user_id,
-
-            "expires_at":
-                expires_at
-
+            "role": role,
+            "user_id": user_id,
+            "expires_at": expires_at
         }
-
-
     except HTTPException:
-
         raise
-
-
     except Exception:
-
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid session"
-        )
+        raise HTTPException(status_code=401, detail="Invalid session token")
 
 
-# ============================================================
-# BEARER TOKEN
-# ============================================================
-
-def extract_bearer_token(
-    authorization
-):
-    """
-    Extract token from:
-
-        Authorization: Bearer <token>
-    """
-
+def extract_bearer_token(authorization: str | None) -> str:
+    """Extract token from Authorization: Bearer <token>."""
     if not authorization:
-
-        raise HTTPException(
-            status_code=401,
-            detail="Login required"
-        )
-
+        raise HTTPException(status_code=401, detail="Authentication token required")
 
     prefix = "Bearer "
+    if not authorization.startswith(prefix):
+        raise HTTPException(status_code=401, detail="Invalid authorization header format")
 
-
-    if not authorization.startswith(
-        prefix
-    ):
-
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid authorization header"
-        )
-
-
-    token = authorization[
-        len(prefix):
-    ].strip()
-
-
+    token = authorization[len(prefix):].strip()
     if not token:
-
-        raise HTTPException(
-            status_code=401,
-            detail="Login required"
-        )
-
+        raise HTTPException(status_code=401, detail="Authentication token required")
 
     return token
 
 
-# ============================================================
-# AUTHENTICATED USER
-# ============================================================
-
-def get_authenticated_user(
-    authorization
-):
-    """
-    Verify Authorization header and return user data.
-    """
-
-    token = extract_bearer_token(
-        authorization
-    )
+def get_authenticated_user(authorization: str | None) -> dict:
+    """Verify Authorization header and return user dict."""
+    token = extract_bearer_token(authorization)
+    return verify_session_token(token)
 
 
-    return verify_session_token(
-        token
-    )
-
-
-# ============================================================
-# REQUIRE STUDENT
-# ============================================================
-
-def require_student(
-    authorization
-):
-    """
-    Only allow a logged-in student.
-    """
-
-    user = get_authenticated_user(
-        authorization
-    )
-
-
+def require_student(authorization: str | None) -> dict:
+    """Enforce that caller has student role."""
+    user = get_authenticated_user(authorization)
     if user["role"] != "student":
-
-        raise HTTPException(
-            status_code=403,
-            detail="Student access required"
-        )
-
-
+        raise HTTPException(status_code=403, detail="Student access required")
     return user
 
 
-# ============================================================
-# REQUIRE FACULTY
-# ============================================================
-
-def require_faculty(
-    authorization
-):
-    """
-    Only allow a logged-in faculty user.
-    """
-
-    user = get_authenticated_user(
-        authorization
-    )
-
-
+def require_faculty(authorization: str | None) -> dict:
+    """Enforce that caller has faculty role."""
+    user = get_authenticated_user(authorization)
     if user["role"] != "faculty":
-
-        raise HTTPException(
-            status_code=403,
-            detail="Faculty access required"
-        )
-
-
+        raise HTTPException(status_code=403, detail="Faculty access required")
     return user
 
 
-# ============================================================
-# SESSION INFORMATION
-# ============================================================
+def require_student_or_faculty(authorization: str | None) -> dict:
+    """Allow either student or faculty role."""
+    return get_authenticated_user(authorization)
 
-def session_expiry_text(
-    expires_at
-):
 
-    try:
-
-        return datetime.fromtimestamp(
-            expires_at,
-            timezone.utc
-        ).isoformat(
-            timespec="seconds"
-        )
-
-    except Exception:
-
-        return ""
+def require_same_student_or_faculty(authorization: str | None, target_student_id: str) -> dict:
+    """
+    Ensure students can ONLY access their own data.
+    Faculty can access any authorized student's data.
+    """
+    user = get_authenticated_user(authorization)
+    if user["role"] == "faculty":
+        return user
+    if user["role"] == "student" and user["user_id"].upper() == str(target_student_id).strip().upper():
+        return user
+    raise HTTPException(
+        status_code=403,
+        detail="Access forbidden: You cannot view or modify another student's private data."
+    )

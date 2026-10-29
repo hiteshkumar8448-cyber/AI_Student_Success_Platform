@@ -1,0 +1,226 @@
+/* ============================================================
+   AI STUDENT SUCCESS PLATFORM — FACULTY DASHBOARD STYLES
+   ============================================================ */
+
+.charts-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 24px;
+}
+
+.chart-card {
+    min-height: 320px;
+}
+
+.chart-container {
+    position: relative;
+    height: 260px;
+    width: 100%;
+}
+
+/* Toolbar for student search & filters */
+.table-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.search-box {
+    position: relative;
+    min-width: 280px;
+    flex: 1;
+}
+
+.search-input {
+    width: 100%;
+    padding: 8px 12px 8px 36px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+}
+
+.filter-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.select-filter {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    font-size: 0.82rem;
+    background: #ffffff;
+    color: var(--navy);
+}
+
+/* Pagination controls */
+.pagination-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 4px 0 4px;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+.pagination-buttons {
+    display: flex;
+    gap: 6px;
+}
+
+/* Student Detail Modal Tabs */
+.modal-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+}
+
+.modal-tab-btn {
+    padding: 10px 16px;
+    border: none;
+    background: transparent;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+}
+
+.modal-tab-btn.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+.tab-pane {
+    display: none;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.tab-pane.active {
+    display: flex;
+}
+
+/* Detail metrics grid */
+.metric-pill-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+
+.metric-pill {
+    background: var(--bg-hover);
+    padding: 12px;
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.metric-pill-val {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--navy);
+}
+
+.metric-pill-lbl {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+/* AI Explanation Box */
+.ai-box {
+    background: #f8fafc;
+    border-left: 4px solid var(--primary);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    font-size: 0.85rem;
+    color: var(--navy-text);
+}
+
+.ai-box strong {
+    color: var(--primary-dark);
+}
+
+.risk-factor-tag {
+    display: inline-block;
+    padding: 4px 10px;
+    background: #fee2e2;
+    color: #991b1b;
+    border-radius: var(--radius-sm);
+    font-size: 0.78rem;
+    font-weight: 500;
+    margin: 3px 4px 3px 0;
+}
+
+/* Communication thread */
+.message-thread {
+    max-height: 220px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    background: var(--bg-main);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+}
+
+.chat-bubble {
+    padding: 8px 12px;
+    border-radius: var(--radius-md);
+    max-width: 80%;
+    font-size: 0.82rem;
+}
+
+.chat-bubble.faculty {
+    background: var(--primary-light);
+    border: 1px solid var(--primary-border);
+    align-self: flex-end;
+}
+
+.chat-bubble.student {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    align-self: flex-start;
+}
+
+.chat-bubble .sender {
+    font-size: 0.7rem;
+    font-weight: 700;
+    margin-bottom: 2px;
+    color: var(--text-secondary);
+}
+
+/* Printable Report Styles */
+@media print {
+    .sidebar, .top-navbar, .btn, .table-toolbar, .pagination-wrapper {
+        display: none !important;
+    }
+    .main-content {
+        margin-left: 0 !important;
+        padding: 0 !important;
+    }
+    .page-body {
+        padding: 0 !important;
+    }
+    .card {
+        border: 1px solid #ccc !important;
+        box-shadow: none !important;
+        page-break-inside: avoid;
+    }
+}

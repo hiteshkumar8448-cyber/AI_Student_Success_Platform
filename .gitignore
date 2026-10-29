@@ -29,6 +29,12 @@ logs/
 *.tmp
 *.temp
 
-# Database temporary files
+# Database files
+*.db
+*.sqlite
+*.sqlite3
 *.sqlite-shm
 *.sqlite-wal
+
+# Nested repository duplicate prevention
+AI_Student_Success_Platform/

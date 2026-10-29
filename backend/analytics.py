@@ -196,14 +196,19 @@ def predict_ml_risk_batch(df):
 
 def load_data():
     """
-    Load the official student dataset.
+    Load the official student dataset with fallback paths.
     """
-    if not DATA_PATH.exists():
-        raise FileNotFoundError(
-            f"Student dataset not found at: {DATA_PATH}"
-        )
+    target_path = DATA_PATH
+    if not target_path.exists():
+        fallback = BASE_DIR / "backend" / "data" / "students.csv"
+        if fallback.exists():
+            target_path = fallback
+        else:
+            raise FileNotFoundError(
+                f"Student dataset not found at: {DATA_PATH} or {fallback}"
+            )
 
-    df = pd.read_csv(DATA_PATH)
+    df = pd.read_csv(target_path)
 
     missing_columns = [
         col for col in REQUIRED_COLUMNS if col not in df.columns
@@ -353,7 +358,6 @@ def generate_semester_history(student_id, year, current_cgpa, attendance, backlo
     backlogs = int(backlogs)
 
     # Determine baseline decline/improvement inclination
-    # Students with backlogs >= 2, attendance < 65, or low subject_perf are prone to decline
     has_decline_signal = (backlogs >= 2) or (attendance < 60) or (current_cgpa < 6.0 and subject_perf < 60)
     has_improve_signal = (attendance >= 85 and backlogs == 0 and current_cgpa >= 7.5)
 
@@ -373,18 +377,14 @@ def generate_semester_history(student_id, year, current_cgpa, attendance, backlo
 
     # Build timeline points up to current_sem
     timeline = []
-    # Anchor points
     sem_gpas = []
 
     if current_sem == 2:
         sem_gpas = [previous_cgpa, current_cgpa]
     else:
-        # Interpolate a realistic trajectory
-        # Starts from an initial baseline, trends toward previous, ends at current
         initial_gpa = round(previous_cgpa + (rng.uniform(0.1, 0.4) if has_decline_signal else rng.uniform(-0.4, 0.1)), 2)
         initial_gpa = min(9.8, max(4.0, initial_gpa))
 
-        # Build trajectory across all prior semesters
         points = np.linspace(initial_gpa, previous_cgpa, current_sem - 1)
         for i, pt in enumerate(points):
             noise = rng.uniform(-0.15, 0.15)
@@ -431,16 +431,14 @@ def generate_subject_performance(student_id, department, subject_perf, coding_sc
     subjects = []
 
     for idx, tmpl in enumerate(templates):
-        # Vary slightly per subject
         offset = rng.uniform(-14.0, 14.0)
-        if idx == 0:  # First core subject (often heaviest, e.g. Algorithms / Thermodynamics)
+        if idx == 0:
             offset -= 6.0 if is_declining else 2.0
-        elif idx == 1:  # Second core subject
+        elif idx == 1:
             offset -= 4.0 if is_declining else -2.0
 
         score = round(float(np.clip(base_score + offset, 28.0, 98.0)), 1)
 
-        # Assign letter grade
         if score >= 85:
             grade = "A+"
             status = "Strong"
@@ -529,21 +527,20 @@ def analyze_performance_downgrade(row, previous_cgpa, cgpa_change, cgpa_change_p
         })
         struggling_areas.append(f"Attendance ({attendance:.1f}%)")
     else:
-        strong_areas.append(f"Consistent Attendance ({attendance:.1f}%)")
+        strong_areas.append(f"Consistent Class Attendance ({attendance:.1f}%)")
 
-    # 2. Subject performance factor
-    declining_subjects = [s["name"] for s in subjects if s.get("contributed_to_decline") or s.get("score", 100) < 55]
-    strong_subjects = [s["name"] for s in subjects if s.get("score", 0) >= 75]
+    # 2. Subject grade degradation
+    declining_subjects = [s["name"] for s in subjects if s.get("contributed_to_decline")]
+    strong_subjects = [s["name"] for s in subjects if s.get("status") == "Strong"]
 
     if declining_subjects:
-        subjects_str = ", ".join(declining_subjects[:2])
         contributing_factors.append({
-            "factor": "Declining Subject Performance",
+            "factor": "Core Coursework Degradation",
             "icon": "🔴" if len(declining_subjects) >= 2 else "🟠",
             "severity": "Critical" if len(declining_subjects) >= 2 else "Warning",
             "badge_color": "danger" if len(declining_subjects) >= 2 else "warning",
-            "metric": f"{len(declining_subjects)} Subjects Struggling",
-            "description": f"Underperforming or failing marks in core curriculum: {subjects_str}. Requires targeted tutoring or remedial coursework."
+            "metric": f"{len(declining_subjects)} Core Subject(s) Failing/Struggling",
+            "description": f"Sharp score decrease identified in {', '.join(declining_subjects[:3])}. Requires targeted tutoring or remedial coursework."
         })
         struggling_areas.extend([f"Coursework in {s}" for s in declining_subjects[:2]])
 
@@ -591,7 +588,7 @@ def analyze_performance_downgrade(row, previous_cgpa, cgpa_change, cgpa_change_p
     # 5. Technical / Coding readiness factor
     if coding < 45.0:
         contributing_factors.append({
-            "factor": "Low Technical & Coding Readiness",
+            "factor": "Low Technical & Coding readiness",
             "icon": "🟡",
             "severity": "Moderate",
             "badge_color": "info",
@@ -604,7 +601,6 @@ def analyze_performance_downgrade(row, previous_cgpa, cgpa_change, cgpa_change_p
 
     # Build human-readable AI explanation paragraph
     name = row.get("name", "Student")
-    dept = row.get("department", "Department")
 
     if performance_trend == "Declining":
         decline_abs_pct = abs(cgpa_change_pct)
@@ -848,11 +844,19 @@ def prepare_data():
 # DASHBOARD SUMMARY
 # ============================================================
 
-def get_summary(df, portal_data=None):
+def get_summary(df=None, portal_data=None):
     """
     Generate institution-level dashboard statistics.
-    Includes active intervention metrics when portal_data is supplied.
+    Supports being called with 0, 1, or 2 arguments:
+      - get_summary()
+      - get_summary(df)
+      - get_summary(df, portal_data)
     """
+    if df is None:
+        df = prepare_data()
+    elif isinstance(df, list):
+        df = pd.DataFrame(df)
+
     pending_interventions = 0
     completed_interventions = 0
 
@@ -866,28 +870,70 @@ def get_summary(df, portal_data=None):
                 pending_interventions += 1
 
     total_students = int(len(df))
-    declining_count = int((df["performance_trend"] == "Declining").sum())
-    improving_count = int((df["performance_trend"] == "Improving").sum())
-    critical_count = int((df["priority_category"] == "Critical").sum())
-    high_risk_count = int((df["priority_category"] == "High Risk").sum())
-    low_attendance_count = int((df["attendance"] < 75.0).sum())
-    backlog_count = int((df["backlogs"] >= 2).sum())
-    requiring_intervention = int((df["priority_category"].isin(["Critical", "High Risk"])).sum())
+    declining_count = int((df["performance_trend"] == "Declining").sum()) if "performance_trend" in df.columns else 0
+    improving_count = int((df["performance_trend"] == "Improving").sum()) if "performance_trend" in df.columns else 0
+    critical_count = int((df["priority_category"] == "Critical").sum()) if "priority_category" in df.columns else 0
+    high_risk_count = int((df["priority_category"] == "High Risk").sum()) if "priority_category" in df.columns else 0
+    low_attendance_count = int((df["attendance"] < 75.0).sum()) if "attendance" in df.columns else 0
+    backlog_count = int((df["backlogs"] >= 2).sum()) if "backlogs" in df.columns else 0
+    requiring_intervention = int((df["priority_category"].isin(["Critical", "High Risk"])).sum()) if "priority_category" in df.columns else 0
+
+    on_track_count = int((df["risk_level"] == "On Track").sum()) if "risk_level" in df.columns else 0
+    needs_attention_count = int((df["risk_level"] == "Needs Attention").sum()) if "risk_level" in df.columns else 0
+    immediate_support_count = int((df["risk_level"] == "Immediate Support").sum()) if "risk_level" in df.columns else 0
+    placement_ready_count = int((df["placement_outcome"] == "Ready").sum()) if "placement_outcome" in df.columns else 0
+
+    avg_success = round(float(df["success_score"].mean()), 1) if "success_score" in df.columns and len(df) else 0.0
+    avg_att = round(float(df["attendance"].mean()), 1) if "attendance" in df.columns and len(df) else 0.0
+    avg_cgpa = round(float(df["cgpa"].mean()), 2) if "cgpa" in df.columns and len(df) else 0.0
+
+    # Department breakdown
+    departments_list = []
+    dept_col = "department" if "department" in df.columns else ("course" if "course" in df.columns else None)
+    if dept_col:
+        for dept_name, group in df.groupby(dept_col):
+            departments_list.append({
+                "course": str(dept_name),
+                "count": int(len(group)),
+                "dept_cgpa": round(float(group["cgpa"].mean()), 2) if "cgpa" in group.columns else 0.0,
+                "dept_att": round(float(group["attendance"].mean()), 1) if "attendance" in group.columns else 0.0
+            })
 
     return {
         "total_students": total_students,
-        "average_success_score": round(float(df["success_score"].mean()), 1),
-        "average_attendance": round(float(df["attendance"].mean()), 1),
-        "average_cgpa": round(float(df["cgpa"].mean()), 2),
-        "on_track": int((df["risk_level"] == "On Track").sum()),
-        "needs_attention": int((df["risk_level"] == "Needs Attention").sum()),
-        "immediate_support": int((df["risk_level"] == "Immediate Support").sum()),
-        "placement_ready": int((df["placement_outcome"] == "Ready").sum()),
+        "totalStudents": total_students,
+        "average_success_score": avg_success,
+        "average_attendance": avg_att,
+        "avg_attendance": avg_att,
+        "attendance": avg_att,
+        "average_cgpa": avg_cgpa,
+        "avg_cgpa": avg_cgpa,
+        "cgpa": avg_cgpa,
+        "on_track": on_track_count,
+        "needs_attention": needs_attention_count,
+        "immediate_support": immediate_support_count,
+        "low_risk_students": on_track_count,
+        "medium_risk_students": needs_attention_count,
+        "high_risk_students": immediate_support_count,
+        "lowRisk": on_track_count,
+        "mediumRisk": needs_attention_count,
+        "highRisk": immediate_support_count,
+        "placement_ready": placement_ready_count,
+        "placement_needs_preparation": max(0, total_students - placement_ready_count),
+        "on_track_percentage": round((on_track_count / total_students * 100), 1) if total_students else 0.0,
+        "needs_attention_percentage": round((needs_attention_count / total_students * 100), 1) if total_students else 0.0,
+        "immediate_support_percentage": round((immediate_support_count / total_students * 100), 1) if total_students else 0.0,
+        "risk_distribution": {
+            "high": immediate_support_count,
+            "medium": needs_attention_count,
+            "low": on_track_count
+        },
+        "departments": departments_list,
+        "department_enrollment": departments_list,
         # Enriched Connection Metrics
         "declining_students": declining_count,
         "improving_students": improving_count,
         "critical_students": critical_count,
-        "high_risk_students": high_risk_count,
         "requiring_intervention": requiring_intervention,
         "low_attendance_students": low_attendance_count,
         "backlog_students": backlog_count,
@@ -914,3 +960,13 @@ def get_student_ids():
     """Return list of all student IDs."""
     df = load_data()
     return df["student_id"].astype(str).tolist()
+
+
+# ============================================================
+# COMPATIBILITY ALIASES
+# ============================================================
+
+load_students = prepare_data
+get_dashboard_summary = get_summary
+calculate_summary = get_summary
+get_all_student_data = prepare_data

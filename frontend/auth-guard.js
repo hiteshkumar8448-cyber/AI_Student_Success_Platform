@@ -1,267 +1,96 @@
-// ============================================================
-// AI STUDENT SUCCESS PLATFORM
-// Authentication Guard
-// ============================================================
-
+/**
+ * AI Student Success Platform — Client-Side Authentication Guard (Root Alias)
+ */
 (function () {
-
     "use strict";
-
-
-    // ========================================================
-    // STORAGE KEYS
-    // ========================================================
 
     const AUTH_TOKEN_KEY = "auth_token";
     const USER_ROLE_KEY = "user_role";
 
-
-    // ========================================================
-    // SESSION HELPERS
-    // ========================================================
-
     function getToken() {
-
-        return sessionStorage.getItem(
-            AUTH_TOKEN_KEY
-        );
+        return sessionStorage.getItem(AUTH_TOKEN_KEY) || localStorage.getItem(AUTH_TOKEN_KEY) || "";
     }
-
 
     function getRole() {
-
-        return sessionStorage.getItem(
-            USER_ROLE_KEY
-        );
+        return sessionStorage.getItem(USER_ROLE_KEY) || localStorage.getItem(USER_ROLE_KEY) || "";
     }
 
+    function getUserId() {
+        return sessionStorage.getItem("user_id") || localStorage.getItem("user_id") || "";
+    }
 
     function clearSession() {
-
-        sessionStorage.removeItem(
-            AUTH_TOKEN_KEY
-        );
-
-        sessionStorage.removeItem(
-            USER_ROLE_KEY
-        );
-
-        sessionStorage.removeItem(
-            "user_id"
-        );
-
-        sessionStorage.removeItem(
-            "user_name"
-        );
-
-        sessionStorage.removeItem(
-            "student_id"
-        );
-
-        sessionStorage.removeItem(
-            "faculty_id"
-        );
+        [
+            AUTH_TOKEN_KEY,
+            USER_ROLE_KEY,
+            "user_id",
+            "user_name",
+            "student_id",
+            "faculty_id",
+            "student_token",
+            "studentToken",
+            "faculty_token",
+            "facultyToken"
+        ].forEach(key => {
+            sessionStorage.removeItem(key);
+            localStorage.removeItem(key);
+        });
     }
 
-
-    function redirectToLogin() {
-
-        if (
-            window.location.pathname !==
-            "/login.html"
-        ) {
-
-            window.location.replace(
-                "/login.html"
-            );
-        }
-    }
-
-
-    function redirectToStudent() {
-
-        window.location.replace(
-            "/student.html"
-        );
-    }
-
-
-    function redirectToFaculty() {
-
-        window.location.replace(
-            "/"
-        );
-    }
-
-
-    // ========================================================
-    // EXPOSE HELPERS FIRST
-    //
-    // Important:
-    // These must be available on protected pages too.
-    // ========================================================
-
-    window.logoutAuth = function () {
-
+    function logout() {
         clearSession();
+        window.location.replace("/login.html");
+    }
 
-        window.location.replace(
-            "/login.html"
-        );
-    };
-
-
-    window.getAuthToken = function () {
-
-        return getToken();
-    };
-
-
-    window.getUserRole = function () {
-
-        return getRole();
-    };
-
-
+    window.logoutAuth = logout;
+    window.logout = logout;
+    window.getAuthToken = getToken;
+    window.getUserRole = getRole;
+    window.getUserId = getUserId;
+    window.clearAuthSession = clearSession;
     window.isAuthenticated = function () {
-
-        return Boolean(
-            getToken() &&
-            getRole()
-        );
+        return Boolean(getToken() && getRole());
     };
 
+    const path = window.location.pathname.toLowerCase();
+    const isLoginPage = path === "/login.html" || path === "/login";
+    const isStudentPage = path === "/student.html" || path === "/student";
+    const isFacultyPage = path === "/faculty.html" || path === "/faculty" || path === "/index.html" || path === "/";
 
-    window.clearAuthSession = function () {
-
-        clearSession();
-    };
-
-
-    // ========================================================
-    // PATH
-    // ========================================================
-
-    const path =
-        window.location.pathname
-            .toLowerCase();
-
-
-    const isLoginPage =
-        path === "/login.html" ||
-        path === "/login";
-
-
-    const isStudentPage =
-        path === "/student.html" ||
-        path === "/student";
-
-
-    const isFacultyPage =
-        path === "/" ||
-        path === "/index.html";
-
-
-    const token =
-        getToken();
-
-    const role =
-        getRole();
-
-
-    // ========================================================
-    // LOGIN PAGE
-    // ========================================================
+    const token = getToken();
+    const role = getRole().toLowerCase();
 
     if (isLoginPage) {
-
         if (token && role === "student") {
-
-            redirectToStudent();
-
+            window.location.replace("/student.html");
             return;
         }
-
-
         if (token && role === "faculty") {
-
-            redirectToFaculty();
-
+            window.location.replace("/faculty.html");
             return;
         }
-
-
         return;
     }
-
-
-    // ========================================================
-    // STUDENT PAGE
-    // ========================================================
 
     if (isStudentPage) {
-
         if (!token || !role) {
-
-            redirectToLogin();
-
+            logout();
             return;
         }
-
-
         if (role !== "student") {
-
-            if (role === "faculty") {
-
-                redirectToFaculty();
-
-            } else {
-
-                clearSession();
-
-                redirectToLogin();
-            }
-
+            window.location.replace("/faculty.html");
             return;
         }
-
-
-        return;
     }
-
-
-    // ========================================================
-    // FACULTY PAGE
-    // ========================================================
 
     if (isFacultyPage) {
-
         if (!token || !role) {
-
-            redirectToLogin();
-
+            logout();
             return;
         }
-
-
         if (role !== "faculty") {
-
-            if (role === "student") {
-
-                redirectToStudent();
-
-            } else {
-
-                clearSession();
-
-                redirectToLogin();
-            }
-
+            window.location.replace("/student.html");
             return;
         }
-
-
-        return;
     }
-
 })();

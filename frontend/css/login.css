@@ -1,0 +1,159 @@
+/* ============================================================
+   AI STUDENT SUCCESS PLATFORM — UNIVERSITY LOGIN STYLES
+   ============================================================ */
+
+.login-wrapper {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    padding: 24px;
+}
+
+.login-card {
+    background: #ffffff;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    width: 100%;
+    max-width: 460px;
+    padding: 36px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.login-header {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.login-logo {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--primary), #3b82f6);
+    color: white;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 800;
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+}
+
+.login-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--navy);
+}
+
+.login-subtitle {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+/* Role Selector Toggle Tabs (Segmented Control) */
+.role-tabs {
+    display: flex;
+    background: #f1f5f9;
+    padding: 5px;
+    border-radius: 12px;
+    gap: 6px;
+    border: 1px solid #e2e8f0;
+}
+
+.role-tab-btn {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid transparent;
+    background: transparent;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    user-select: none;
+}
+
+.role-tab-btn:hover:not(.active) {
+    color: #0f172a;
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.role-tab-btn.active {
+    background: #ffffff;
+    color: var(--primary);
+    border-color: #cbd5e1;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+/* Error/Message Banner */
+.login-message {
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+    font-size: 0.82rem;
+    display: none;
+    line-height: 1.4;
+}
+
+.login-message.error {
+    display: block;
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.login-message.success {
+    display: block;
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+/* Form Styles */
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.btn-submit {
+    width: 100%;
+    padding: 11px;
+    font-size: 0.95rem;
+    margin-top: 6px;
+}
+
+/* Demo Credentials Box */
+.demo-credentials-box {
+    background: #f8fafc;
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.demo-credentials-box strong {
+    color: var(--navy);
+}
+
+.demo-quick-fill {
+    color: var(--primary);
+    cursor: pointer;
+    text-decoration: underline;
+    font-weight: 600;
+}
